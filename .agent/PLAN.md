@@ -36,7 +36,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 3.3 Routes: `POST /api/listings`, `GET /api/listings/:id`, `PATCH`, `DELETE`
 - [x] 3.4 Statuses active / sold / paused: `PATCH /api/listings/:id/status` with allowed transitions
 - [x] 3.5 `GET /api/me/listings` (own listings, any status)
-- [ ] 3.6 Tests for CRUD, ownership (403), validation (400), status transitions
+- [x] 3.6 Tests for CRUD, ownership (403), validation (400), status transitions
 - Acceptance: tests green.
 
 ## Stage 4 — Categories and photo upload
