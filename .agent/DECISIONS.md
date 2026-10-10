@@ -73,3 +73,11 @@ Sign-up / sign-in / sign-out / get-session are better-auth's endpoints under `/a
 (`/sign-up/email`, `/sign-in/email`, `/sign-out`, `/get-session`) — no wrapper routes. Its CSRF check
 requires an `Origin` from `TRUSTED_ORIGINS` on cookie-authenticated POSTs; non-browser clients (curl,
 tests) must send one.
+
+## D13. Profile fields and what is public
+
+`PATCH /api/me` accepts only `name`, `phone`, `city` (strict object, at least one field; empty string
+clears `phone`/`city`). Email changes go through better-auth, not this endpoint. The public profile
+(`GET /api/users/:id`) shows `id`, `name`, `image`, `phone`, `city`, `createdAt` — the phone is the
+seller's contact on a classifieds board and is optional; the email stays private. Services return
+plain DTOs with ISO-string dates matching the shared schemas.
