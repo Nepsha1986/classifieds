@@ -27,3 +27,4 @@ Next: Stage 2 — Authentication (step 2.1).
 - 2026-10-10 — 2.4 — shared user.ts (updateProfileInputSchema, profileSchema, publicUserSchema); users.service; GET/PATCH /api/me behind requireAuth; error handler maps exposed 4xx (malformed JSON) to 400; curl-verified → next: 2.5
 - 2026-10-10 — 2.5 — GET /api/users/:id (public profile, no email; 404 for unknown id); curl-verified → next: 2.6
 - 2026-10-10 — 2.6 — test/auth.test.ts: sign-up → me → sign-out → sign-in → me, wrong password 401, duplicate 422, short password 400, profile fields rejected at sign-up, /api/me 401/update/clear/400, public profile (schema-checked, no email), 404; helpers.signUpAgent → next: stage 2 acceptance
+- 2026-10-10 — 2.x — docker-compose: auth env for the api service (local default secret, overridable); prod build verified: refuses to start without secret, sign-up works with one → next: stage 2 acceptance
