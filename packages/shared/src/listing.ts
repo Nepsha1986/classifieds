@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { paginationQuerySchema } from './pagination.js';
 
 export const LISTING_STATUSES = ['active', 'paused', 'sold'] as const;
 
@@ -91,3 +92,9 @@ export const listingSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 export type Listing = z.infer<typeof listingSchema>;
+
+/** `GET /api/me/listings`: the seller's own listings in any status, newest first. */
+export const myListingsQuerySchema = paginationQuerySchema.extend({
+  status: listingStatusSchema.optional(),
+});
+export type MyListingsQuery = z.infer<typeof myListingsQuerySchema>;

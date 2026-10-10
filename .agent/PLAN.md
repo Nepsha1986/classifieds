@@ -35,7 +35,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 3.2 Service layer: create, get, update, delete with ownership checks
 - [x] 3.3 Routes: `POST /api/listings`, `GET /api/listings/:id`, `PATCH`, `DELETE`
 - [x] 3.4 Statuses active / sold / paused: `PATCH /api/listings/:id/status` with allowed transitions
-- [ ] 3.5 `GET /api/me/listings` (own listings, any status)
+- [x] 3.5 `GET /api/me/listings` (own listings, any status)
 - [ ] 3.6 Tests for CRUD, ownership (403), validation (400), status transitions
 - Acceptance: tests green.
 

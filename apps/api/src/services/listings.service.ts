@@ -3,10 +3,12 @@ import {
   type CreateListingInput,
   type Listing,
   type ListingStatus,
+  type MyListingsQuery,
+  type Paginated,
   type UpdateListingInput,
   canChangeListingStatus,
 } from '@classifieds/shared';
-import { and, eq, exists } from 'drizzle-orm';
+import { and, count, desc, eq, exists } from 'drizzle-orm';
 import { z } from 'zod';
 import { type Database, db } from '../db/client.js';
 import { categories, listings } from '../db/schema.js';
@@ -124,4 +126,24 @@ export async function changeListingStatus(
       .returning();
     return toListing(row!);
   });
+}
+
+/** The seller's own listings in any status (optionally one status), newest first. */
+export async function listOwnListings(
+  sellerId: string,
+  { page, pageSize, status }: MyListingsQuery,
+): Promise<Paginated<Listing>> {
+  const where = and(eq(listings.sellerId, sellerId), status ? eq(listings.status, status) : undefined);
+  const [rows, [totals]] = await Promise.all([
+    db
+      .select()
+      .from(listings)
+      .where(where)
+      .orderBy(desc(listings.createdAt), desc(listings.id))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ total: count() }).from(listings).where(where),
+  ]);
+  const total = totals?.total ?? 0;
+  return { items: rows.map(toListing), page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
 }
