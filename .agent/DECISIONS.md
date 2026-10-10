@@ -100,3 +100,10 @@ to its seller — everyone else gets 404, so its existence is not leaked. Writes
 (400 otherwise). Sold listings are read-only (409 on edit), but can still be deleted. Invalid status
 transitions are 409 Conflict (valid input, wrong state). Writes run in a transaction that locks the row
 (`SELECT … FOR UPDATE`) so the ownership/state check and the update cannot race.
+
+## D16. Category tree endpoint
+
+`GET /api/categories` returns the whole tree (`{ id, parentId, slug, name, children }`, siblings by
+`sort_order`) in one response: it is a few dozen rows, read in one query and assembled in memory, and both
+frontends need the full tree for selects and filters. It is public and cacheable for 5 minutes because
+categories change only through the seed on deploy.

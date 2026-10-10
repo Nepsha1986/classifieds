@@ -2,6 +2,7 @@ import { toNodeHandler } from 'better-auth/node';
 import express from 'express';
 import { auth } from './auth/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import { categoriesRouter } from './routes/categories.js';
 import { healthRouter } from './routes/health.js';
 import { listingsRouter } from './routes/listings.js';
 import { meRouter } from './routes/me.js';
@@ -19,6 +20,7 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
 
   app.use(healthRouter);
+  app.use(categoriesRouter);
   app.use(meRouter);
   app.use(usersRouter);
   app.use(listingsRouter);

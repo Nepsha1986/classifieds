@@ -58,3 +58,4 @@ Paused listings are visible only to the seller; writes lock the row; leaf catego
 How to check: `pnpm test`; or run the API and use curl with a cookie jar (sign-up needs
 `Origin: http://localhost:5173`), then POST a listing with the `cars` category id.
 Next: Stage 4 — Categories and photo upload (step 4.1).
+- 2026-10-10 — 4.1 — shared category.ts (recursive categorySchema/categoryTreeSchema, categorySubtreeIds for later filters); categories.service builds the tree from one ordered query; GET /api/categories (public, Cache-Control max-age=300); tests (shared 20, api 44), curl-verified → next: 4.2
