@@ -23,7 +23,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 
 - [x] 2.1 better-auth server config with Drizzle adapter; auth tables in the schema + migration
 - [x] 2.2 Mount the auth handler in Express; email + password sign-up / sign-in / sign-out
-- [ ] 2.3 `requireAuth` middleware that loads the session onto `req`
+- [x] 2.3 `requireAuth` middleware that loads the session onto `req`
 - [ ] 2.4 Profile: `GET /api/me`, `PATCH /api/me` (name, phone, city) with shared Zod schemas
 - [ ] 2.5 Public user profile `GET /api/users/:id`
 - [ ] 2.6 Tests: sign-up → sign-in → me → sign-out; unauthorized access is 401

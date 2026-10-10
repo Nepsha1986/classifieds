@@ -23,3 +23,4 @@ Next: Stage 2 — Authentication (step 2.1).
 
 - 2026-10-10 — 2.1 — better-auth 1.7 with Drizzle adapter (usePlural); users/sessions/accounts/verifications tables + profile fields phone/city; listings.seller_id FK → users; migration 0001_auth; auth env (BETTER_AUTH_URL/SECRET, TRUSTED_ORIGINS) → next: 2.2
 - 2026-10-10 — 2.2 — better-auth handler mounted at /api/auth/{*path} before express.json(); curl: sign-up, get-session, sign-in (401 on bad password), sign-out (needs trusted Origin with cookies) → next: 2.3
+- 2026-10-10 — 2.3 — middleware/auth.ts: loadSession, requireAuth (401), getAuth; req.auth typed via global Express augmentation; tests for no/invalid/valid session → next: 2.4
