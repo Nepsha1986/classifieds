@@ -52,3 +52,32 @@ The Dockerfile installs only the API's dependency subtree, builds shared + api, 
 --legacy` produces a self-contained folder (dist, drizzle migrations, prod node_modules with the compiled
 shared package). The container runs migrations and the idempotent seed on start, then the server.
 Each package declares its own `typescript` devDependency because the filtered install skips the root.
+
+## D10. Auth tables owned by our Drizzle schema
+
+The better-auth core tables (`users`, `sessions`, `accounts`, `verifications`) are written by hand in
+`schema.ts` (plural names like the rest, adapter `usePlural: true`) and migrated by drizzle-kit — one
+migration tool for the whole DB, no better-auth CLI. User IDs are UUIDs (`generateId: crypto.randomUUID`).
+Profile fields `phone`/`city` live on `users` as better-auth `additionalFields` with `input: false`
+(changed only via `PATCH /api/me`). Deleting a user cascades to sessions, accounts and listings.
+Telemetry is disabled.
+
+## D11. Auth secret
+
+`BETTER_AUTH_SECRET` (≥32 chars) is required when `NODE_ENV=production`; in dev/test a fixed insecure
+default is used so the project runs without setup. An empty value in `.env` counts as unset.
+
+## D12. Auth endpoints are better-auth's own
+
+Sign-up / sign-in / sign-out / get-session are better-auth's endpoints under `/api/auth/*`
+(`/sign-up/email`, `/sign-in/email`, `/sign-out`, `/get-session`) — no wrapper routes. Its CSRF check
+requires an `Origin` from `TRUSTED_ORIGINS` on cookie-authenticated POSTs; non-browser clients (curl,
+tests) must send one.
+
+## D13. Profile fields and what is public
+
+`PATCH /api/me` accepts only `name`, `phone`, `city` (strict object, at least one field; empty string
+clears `phone`/`city`). Email changes go through better-auth, not this endpoint. The public profile
+(`GET /api/users/:id`) shows `id`, `name`, `image`, `phone`, `city`, `createdAt` — the phone is the
+seller's contact on a classifieds board and is optional; the email stays private. Services return
+plain DTOs with ISO-string dates matching the shared schemas.

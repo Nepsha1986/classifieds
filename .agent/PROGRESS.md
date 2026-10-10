@@ -20,3 +20,22 @@ How to check: `pnpm install && pnpm lint && pnpm typecheck && pnpm test`; `docke
 (or local Postgres), `pnpm --filter @classifieds/api db:migrate && pnpm --filter @classifieds/api db:seed`,
 `pnpm --filter @classifieds/api dev`, `curl localhost:4000/health`.
 Next: Stage 2 — Authentication (step 2.1).
+
+- 2026-10-10 — 2.1 — better-auth 1.7 with Drizzle adapter (usePlural); users/sessions/accounts/verifications tables + profile fields phone/city; listings.seller_id FK → users; migration 0001_auth; auth env (BETTER_AUTH_URL/SECRET, TRUSTED_ORIGINS) → next: 2.2
+- 2026-10-10 — 2.2 — better-auth handler mounted at /api/auth/{*path} before express.json(); curl: sign-up, get-session, sign-in (401 on bad password), sign-out (needs trusted Origin with cookies) → next: 2.3
+- 2026-10-10 — 2.3 — middleware/auth.ts: loadSession, requireAuth (401), getAuth; req.auth typed via global Express augmentation; tests for no/invalid/valid session → next: 2.4
+- 2026-10-10 — 2.4 — shared user.ts (updateProfileInputSchema, profileSchema, publicUserSchema); users.service; GET/PATCH /api/me behind requireAuth; error handler maps exposed 4xx (malformed JSON) to 400; curl-verified → next: 2.5
+- 2026-10-10 — 2.5 — GET /api/users/:id (public profile, no email; 404 for unknown id); curl-verified → next: 2.6
+- 2026-10-10 — 2.6 — test/auth.test.ts: sign-up → me → sign-out → sign-in → me, wrong password 401, duplicate 422, short password 400, profile fields rejected at sign-up, /api/me 401/update/clear/400, public profile (schema-checked, no email), 404; helpers.signUpAgent → next: stage 2 acceptance
+- 2026-10-10 — 2.x — docker-compose: auth env for the api service (local default secret, overridable); prod build verified: refuses to start without secret, sign-up works with one → next: stage 2 acceptance
+
+### Stage 2 complete — Authentication (2026-10-10)
+
+Verified by the verifier sub-agent: frozen install, lint, typecheck, format:check, tests (shared 7, api 15),
+`db:migrate` on an existing DB, and the curl cookie flow (sign-up → me → PATCH me / 400 → public profile
+without email → sign-out → 401 → sign-in → me; 401 without cookie).
+What works: better-auth email + password under `/api/auth/*` (sessions in Postgres via Drizzle),
+`requireAuth`/`loadSession` middleware (`req.auth`), `GET/PATCH /api/me`, `GET /api/users/:id`.
+How to check: `pnpm test`; or run the API and use curl with a cookie jar — cookie-authenticated POSTs to
+`/api/auth/*` need `Origin: http://localhost:5173` (a trusted origin).
+Next: Stage 3 — Listings CRUD and statuses (step 3.1).
