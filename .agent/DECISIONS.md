@@ -66,3 +66,10 @@ Telemetry is disabled.
 
 `BETTER_AUTH_SECRET` (≥32 chars) is required when `NODE_ENV=production`; in dev/test a fixed insecure
 default is used so the project runs without setup. An empty value in `.env` counts as unset.
+
+## D12. Auth endpoints are better-auth's own
+
+Sign-up / sign-in / sign-out / get-session are better-auth's endpoints under `/api/auth/*`
+(`/sign-up/email`, `/sign-in/email`, `/sign-out`, `/get-session`) — no wrapper routes. Its CSRF check
+requires an `Origin` from `TRUSTED_ORIGINS` on cookie-authenticated POSTs; non-browser clients (curl,
+tests) must send one.
