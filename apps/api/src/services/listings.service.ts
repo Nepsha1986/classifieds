@@ -15,7 +15,7 @@ import { categories, listings } from '../db/schema.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/http-error.js';
 
 type ListingRow = typeof listings.$inferSelect;
-type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+export type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 /** Statuses anyone can see; a paused listing is visible only to its seller. */
 const PUBLIC_STATUSES: readonly ListingStatus[] = ['active', 'sold'];
@@ -37,7 +37,7 @@ export function toListing(row: ListingRow): Listing {
   };
 }
 
-const listingNotFound = () => notFound('Listing not found');
+export const listingNotFound = () => notFound('Listing not found');
 
 /** Listing IDs are UUIDs; anything else cannot exist (and would make Postgres reject the cast). */
 function isListingId(id: string) {
@@ -62,7 +62,7 @@ async function assertLeafCategory(executor: Database | Transaction, categoryId: 
  * Loads a listing for a write by its seller: 404 if it does not exist, 403 if it belongs to someone
  * else. The row is locked until the transaction ends so concurrent writes cannot interleave.
  */
-async function lockOwnListing(tx: Transaction, id: string, userId: string) {
+export async function lockOwnListing(tx: Transaction, id: string, userId: string) {
   if (!isListingId(id)) throw listingNotFound();
   const [row] = await tx.select().from(listings).where(eq(listings.id, id)).for('update');
   if (!row) throw listingNotFound();

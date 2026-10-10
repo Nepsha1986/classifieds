@@ -107,3 +107,18 @@ transitions are 409 Conflict (valid input, wrong state). Writes run in a transac
 `sort_order`) in one response: it is a few dozen rows, read in one query and assembled in memory, and both
 frontends need the full tree for selects and filters. It is public and cacheable for 5 minutes because
 categories change only through the seed on deploy.
+
+## D17. Photo upload pipeline
+
+`POST /api/listings/:id/photos` takes `multipart/form-data` with files in the `photos` field (no text
+fields). Limits live in `@classifieds/shared`: JPEG/PNG/WebP, ≤5 MB each, ≤10 photos per listing in
+total. Order of checks: auth (401) → ownership/state pre-check before Multer reads the body (404/403/409
+for sold) so strangers cannot write to disk → Multer disk storage into `UPLOAD_DIR/tmp` with an early
+reject by declared type (415) and size/count limits (413/400) → the real format is detected from magic
+bytes (415; the client's Content-Type is only a hint) → under a row lock the count is re-checked (409 when
+the listing would exceed 10) and files are renamed to `UPLOAD_DIR/listings/<uuid>.<ext>` and inserted.
+Temp files are always removed; moved files are removed if the DB write fails. `tmp` sits inside
+`UPLOAD_DIR` so the rename stays on one filesystem (one Docker volume). File names are server-generated,
+never from the client. The response is 201 with all photos of the listing in order; photo URLs are
+API-relative paths (`/uploads/listings/...`). `UPLOAD_DIR` relative paths resolve against `apps/api`.
+Disk storage (not memory) keeps memory flat under many concurrent uploads.

@@ -58,4 +58,6 @@ Paused listings are visible only to the seller; writes lock the row; leaf catego
 How to check: `pnpm test`; or run the API and use curl with a cookie jar (sign-up needs
 `Origin: http://localhost:5173`), then POST a listing with the `cars` category id.
 Next: Stage 4 — Categories and photo upload (step 4.1).
+
 - 2026-10-10 — 4.1 — shared category.ts (recursive categorySchema/categoryTreeSchema, categorySubtreeIds for later filters); categories.service builds the tree from one ordered query; GET /api/categories (public, Cache-Control max-age=300); tests (shared 20, api 44), curl-verified → next: 4.2
+- 2026-10-10 — 4.2 — multer 2.4: POST /api/listings/:id/photos (field `photos`, ≤5 MB each, JPEG/PNG/WebP, ≤10 per listing); ownership pre-check before the body is read, then multer to UPLOAD_DIR/tmp, magic-byte check, rename into UPLOAD_DIR/listings under a row lock, temp files always removed; shared photo.ts (limits + listingPhotoSchema); UPLOAD_DIR resolved against apps/api; tests use a temp upload dir; curl-verified 201/415/413/403/401/400/409 → next: 4.3

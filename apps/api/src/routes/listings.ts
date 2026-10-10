@@ -5,6 +5,7 @@ import {
 } from '@classifieds/shared';
 import { type Request, Router } from 'express';
 import { getAuth, loadSession, requireAuth } from '../middleware/auth.js';
+import { photoUpload } from '../middleware/photo-upload.js';
 import {
   changeListingStatus,
   createListing,
@@ -12,6 +13,7 @@ import {
   getListing,
   updateListing,
 } from '../services/listings.service.js';
+import { type UploadedFile, addListingPhotos, assertCanEditPhotos } from '../services/photos.service.js';
 
 /** Express 5 typings drop route params when a middleware precedes the handler. */
 type ListingRequest = Request<{ id: string }>;
@@ -42,3 +44,19 @@ listingsRouter.patch('/api/listings/:id/status', requireAuth, async (req: Listin
   const input = changeListingStatusInputSchema.parse(req.body);
   res.json(await changeListingStatus(req.params.id, getAuth(req).user.id, input));
 });
+
+listingsRouter.post(
+  '/api/listings/:id/photos',
+  requireAuth,
+  // Ownership is checked before Multer reads the body, so strangers cannot write files to disk.
+  async (req: ListingRequest, _res, next) => {
+    await assertCanEditPhotos(req.params.id, getAuth(req).user.id);
+    next();
+  },
+  photoUpload,
+  async (req: ListingRequest, res) => {
+    const files = Array.isArray(req.files) ? (req.files as UploadedFile[]) : [];
+    const photos = await addListingPhotos(req.params.id, getAuth(req).user.id, files);
+    res.status(201).json(photos);
+  },
+);
