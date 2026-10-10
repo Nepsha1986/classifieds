@@ -134,3 +134,13 @@ their listings in one query. Positions stay contiguous (0..n-1): uploads append,
 or foreign list) — a full permutation is unambiguous and idempotent. Photos of a sold listing cannot be
 added, removed or reordered (409), like the rest of a sold listing. A deleted photo's file is removed
 after the transaction commits, so a rollback never leaves a row pointing at a missing file.
+
+## D19. File clean-up
+
+Files are removed after the transaction commits (listing delete, photo delete), best-effort: a failed
+`rm` is logged, never turned into a failed request, because the DB is the source of truth. What the
+normal paths cannot cover (a crash between the rename and the commit, rows removed by a DB-level cascade
+such as deleting a user, an aborted temp upload) is handled by `sweepUploads()` at server start: it
+removes temp files and photo files without a `listing_photos` row, but only when older than 1 hour so an
+upload in flight is never touched. better-auth user deletion is not enabled, so no API path cascades
+photos without going through the service.

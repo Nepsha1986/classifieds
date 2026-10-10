@@ -11,10 +11,11 @@ import {
 } from '@classifieds/shared';
 import { and, count, desc, eq, exists } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { categories, listings } from '../db/schema.js';
+import { categories, listingPhotos, listings } from '../db/schema.js';
 import { badRequest, conflict } from '../lib/http-error.js';
+import { listingPhotoPath } from '../lib/uploads.js';
 import { type Executor, isListingId, listingNotFound, lockOwnListing } from './listing-access.js';
-import { photosByListing } from './photos.service.js';
+import { photosByListing, removeFiles } from './photos.service.js';
 
 type ListingRow = typeof listings.$inferSelect;
 
@@ -98,11 +99,19 @@ export async function updateListing(id: string, userId: string, input: UpdateLis
   });
 }
 
+/** Deletes the listing with its photos; the photo files are removed after the commit. */
 export async function deleteListing(id: string, userId: string): Promise<void> {
-  await db.transaction(async (tx) => {
+  const fileNames = await db.transaction(async (tx) => {
     await lockOwnListing(tx, id, userId);
+    // Photo rows go with the listing (ON DELETE CASCADE); their file names are needed for the disk.
+    const photos = await tx
+      .select({ fileName: listingPhotos.fileName })
+      .from(listingPhotos)
+      .where(eq(listingPhotos.listingId, id));
     await tx.delete(listings).where(eq(listings.id, id));
+    return photos.map((p) => p.fileName);
   });
+  await removeFiles(fileNames.map(listingPhotoPath));
 }
 
 export async function changeListingStatus(
