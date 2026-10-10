@@ -122,3 +122,15 @@ Temp files are always removed; moved files are removed if the DB write fails. `t
 never from the client. The response is 201 with all photos of the listing in order; photo URLs are
 API-relative paths (`/uploads/listings/...`). `UPLOAD_DIR` relative paths resolve against `apps/api`.
 Disk storage (not memory) keeps memory flat under many concurrent uploads.
+
+## D18. Photo serving, order and output
+
+Accepted photos are served by `express.static` at `/uploads/listings/<uuid>.<ext>` with a one-year
+`immutable` cache (names are never reused) and `nosniff`; the temp dir is not exposed. Photo URLs are
+unguessable, so photos of a paused listing are not hidden — the listing data itself is. Every listing
+response carries `photos` ordered by `position` (the first is the cover); lists load photos for all
+their listings in one query. Positions stay contiguous (0..n-1): uploads append, deletes renumber.
+`PUT /api/listings/:id/photos/order` takes the full list of the listing's photo IDs (400 for a partial
+or foreign list) — a full permutation is unambiguous and idempotent. Photos of a sold listing cannot be
+added, removed or reordered (409), like the rest of a sold listing. A deleted photo's file is removed
+after the transaction commits, so a rollback never leaves a row pointing at a missing file.

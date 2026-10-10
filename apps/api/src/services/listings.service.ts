@@ -1,5 +1,6 @@
 import {
   type ChangeListingStatusInput,
+  type ListingPhoto,
   type CreateListingInput,
   type Listing,
   type ListingStatus,
@@ -9,18 +10,18 @@ import {
   canChangeListingStatus,
 } from '@classifieds/shared';
 import { and, count, desc, eq, exists } from 'drizzle-orm';
-import { z } from 'zod';
-import { type Database, db } from '../db/client.js';
+import { db } from '../db/client.js';
 import { categories, listings } from '../db/schema.js';
-import { badRequest, conflict, forbidden, notFound } from '../lib/http-error.js';
+import { badRequest, conflict } from '../lib/http-error.js';
+import { type Executor, isListingId, listingNotFound, lockOwnListing } from './listing-access.js';
+import { photosByListing } from './photos.service.js';
 
 type ListingRow = typeof listings.$inferSelect;
-export type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 /** Statuses anyone can see; a paused listing is visible only to its seller. */
 const PUBLIC_STATUSES: readonly ListingStatus[] = ['active', 'sold'];
 
-export function toListing(row: ListingRow): Listing {
+export function toListing(row: ListingRow, photos: ListingPhoto[] = []): Listing {
   return {
     id: row.id,
     sellerId: row.sellerId,
@@ -32,20 +33,28 @@ export function toListing(row: ListingRow): Listing {
     city: row.city,
     status: row.status,
     attributes: row.attributes as Listing['attributes'],
+    photos,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
 
-export const listingNotFound = () => notFound('Listing not found');
+/** Converts rows to API listings, loading their photos in one query. */
+async function withPhotos(rows: ListingRow[], executor: Executor = db): Promise<Listing[]> {
+  const photos = await photosByListing(
+    rows.map((r) => r.id),
+    executor,
+  );
+  return rows.map((row) => toListing(row, photos.get(row.id) ?? []));
+}
 
-/** Listing IDs are UUIDs; anything else cannot exist (and would make Postgres reject the cast). */
-function isListingId(id: string) {
-  return z.uuid().safeParse(id).success;
+async function withPhotosOne(row: ListingRow, executor: Executor = db): Promise<Listing> {
+  const [listing] = await withPhotos([row], executor);
+  return listing!;
 }
 
 /** A listing must be filed under an existing leaf category (e.g. "Cars", not "Transport"). */
-async function assertLeafCategory(executor: Database | Transaction, categoryId: number) {
+async function assertLeafCategory(executor: Executor, categoryId: number) {
   const child = executor
     .select({ id: categories.id })
     .from(categories)
@@ -56,18 +65,6 @@ async function assertLeafCategory(executor: Database | Transaction, categoryId: 
     .where(eq(categories.id, categoryId));
   if (!category) throw badRequest('Unknown category', { categoryId });
   if (category.hasChildren) throw badRequest('Choose a subcategory', { categoryId });
-}
-
-/**
- * Loads a listing for a write by its seller: 404 if it does not exist, 403 if it belongs to someone
- * else. The row is locked until the transaction ends so concurrent writes cannot interleave.
- */
-export async function lockOwnListing(tx: Transaction, id: string, userId: string) {
-  if (!isListingId(id)) throw listingNotFound();
-  const [row] = await tx.select().from(listings).where(eq(listings.id, id)).for('update');
-  if (!row) throw listingNotFound();
-  if (row.sellerId !== userId) throw forbidden('You can only manage your own listings');
-  return row;
 }
 
 export async function createListing(sellerId: string, input: CreateListingInput): Promise<Listing> {
@@ -85,7 +82,7 @@ export async function getListing(id: string, viewerId?: string): Promise<Listing
   const [row] = await db.select().from(listings).where(eq(listings.id, id));
   if (!row) throw listingNotFound();
   if (!PUBLIC_STATUSES.includes(row.status) && row.sellerId !== viewerId) throw listingNotFound();
-  return toListing(row);
+  return withPhotosOne(row);
 }
 
 /** Edits the listing's content. Sold listings are read-only. */
@@ -97,7 +94,7 @@ export async function updateListing(id: string, userId: string, input: UpdateLis
       await assertLeafCategory(tx, input.categoryId);
     }
     const [row] = await tx.update(listings).set(input).where(eq(listings.id, id)).returning();
-    return toListing(row!);
+    return withPhotosOne(row!, tx);
   });
 }
 
@@ -118,13 +115,13 @@ export async function changeListingStatus(
     if (!canChangeListingStatus(current.status, status)) {
       throw conflict(`Cannot change status from ${current.status} to ${status}`);
     }
-    if (current.status === status) return toListing(current);
+    if (current.status === status) return withPhotosOne(current, tx);
     const [row] = await tx
       .update(listings)
       .set({ status })
       .where(and(eq(listings.id, id), eq(listings.sellerId, userId)))
       .returning();
-    return toListing(row!);
+    return withPhotosOne(row!, tx);
   });
 }
 
@@ -145,5 +142,5 @@ export async function listOwnListings(
     db.select({ total: count() }).from(listings).where(where),
   ]);
   const total = totals?.total ?? 0;
-  return { items: rows.map(toListing), page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
+  return { items: await withPhotos(rows), page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
 }

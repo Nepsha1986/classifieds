@@ -20,3 +20,15 @@ export const listingPhotoSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 export type ListingPhoto = z.infer<typeof listingPhotoSchema>;
+
+/**
+ * `PUT /api/listings/:id/photos/order`: every photo of the listing exactly once, in the new order
+ * (the first one becomes the cover).
+ */
+export const reorderListingPhotosInputSchema = z.strictObject({
+  photoIds: z
+    .array(z.uuid())
+    .max(PHOTO_MAX_PER_LISTING)
+    .refine((ids) => new Set(ids).size === ids.length, 'Photo IDs must be unique'),
+});
+export type ReorderListingPhotosInput = z.infer<typeof reorderListingPhotosInputSchema>;

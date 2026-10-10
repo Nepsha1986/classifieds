@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { paginationQuerySchema } from './pagination.js';
+import { listingPhotoSchema } from './photo.js';
 
 export const LISTING_STATUSES = ['active', 'paused', 'sold'] as const;
 
@@ -88,6 +89,8 @@ export const listingSchema = z.object({
   city: z.string(),
   status: listingStatusSchema,
   attributes: listingAttributesSchema,
+  /** Ordered by `position`; the first photo is the cover. */
+  photos: z.array(listingPhotoSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
