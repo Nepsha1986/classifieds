@@ -20,3 +20,4 @@ How to check: `pnpm install && pnpm lint && pnpm typecheck && pnpm test`; `docke
 (or local Postgres), `pnpm --filter @classifieds/api db:migrate && pnpm --filter @classifieds/api db:seed`,
 `pnpm --filter @classifieds/api dev`, `curl localhost:4000/health`.
 Next: Stage 2 — Authentication (step 2.1).
+- 2026-10-10 — 2.1 — better-auth 1.7 with Drizzle adapter (usePlural); users/sessions/accounts/verifications tables + profile fields phone/city; listings.seller_id FK → users; migration 0001_auth; auth env (BETTER_AUTH_URL/SECRET, TRUSTED_ORIGINS) → next: 2.2
