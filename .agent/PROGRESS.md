@@ -9,3 +9,4 @@ Newest entries at the bottom. Format: date — step — what was done → next.
 - 2026-10-10 — 1.4 — apps/api: Express 5 skeleton, Zod-validated config (process.loadEnvFile), /health, 404 + error handler; smoke-tested with curl → next: 1.5
 - 2026-10-10 — 1.5 — Drizzle (node-postgres) client + schema: categories (tree), listings, listing_photos → next: 1.6
 - 2026-10-10 — 1.6 — Initial migration (drizzle/0000_init.sql), migrate + idempotent category seed scripts (25 categories, 2 levels) → next: 1.7
+- 2026-10-10 — 1.7 — Vitest + supertest in API; global setup rebuilds classifieds_test from migrations; /health checks DB (503 when down); tests for health and seed → next: 1.8
