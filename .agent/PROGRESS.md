@@ -39,4 +39,6 @@ What works: better-auth email + password under `/api/auth/*` (sessions in Postgr
 How to check: `pnpm test`; or run the API and use curl with a cookie jar — cookie-authenticated POSTs to
 `/api/auth/*` need `Origin: http://localhost:5173` (a trusted origin).
 Next: Stage 3 — Listings CRUD and statuses (step 3.1).
+
 - 2026-10-10 — 3.1 — shared listing.ts: create/update/status input schemas, listingSchema output, scalar `attributes` map, status transition table + canChangeListingStatus; unit tests (shared 14) → next: 3.2
+- 2026-10-10 — 3.2 — listings.service: create (leaf category check, always active), get (paused only for seller), update (sold is read-only → 409), delete, changeStatus (transition table, idempotent); writes lock the row (SELECT … FOR UPDATE), 404 unknown/non-UUID id, 403 not owner; service tests + seededCategories helper (api 21) → next: 3.3
