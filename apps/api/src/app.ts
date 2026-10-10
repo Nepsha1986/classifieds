@@ -4,6 +4,7 @@ import { auth } from './auth/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { healthRouter } from './routes/health.js';
 import { meRouter } from './routes/me.js';
+import { usersRouter } from './routes/users.js';
 
 export function createApp() {
   const app = express();
@@ -18,6 +19,7 @@ export function createApp() {
 
   app.use(healthRouter);
   app.use(meRouter);
+  app.use(usersRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

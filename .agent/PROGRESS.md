@@ -25,3 +25,4 @@ Next: Stage 2 — Authentication (step 2.1).
 - 2026-10-10 — 2.2 — better-auth handler mounted at /api/auth/{*path} before express.json(); curl: sign-up, get-session, sign-in (401 on bad password), sign-out (needs trusted Origin with cookies) → next: 2.3
 - 2026-10-10 — 2.3 — middleware/auth.ts: loadSession, requireAuth (401), getAuth; req.auth typed via global Express augmentation; tests for no/invalid/valid session → next: 2.4
 - 2026-10-10 — 2.4 — shared user.ts (updateProfileInputSchema, profileSchema, publicUserSchema); users.service; GET/PATCH /api/me behind requireAuth; error handler maps exposed 4xx (malformed JSON) to 400; curl-verified → next: 2.5
+- 2026-10-10 — 2.5 — GET /api/users/:id (public profile, no email; 404 for unknown id); curl-verified → next: 2.6
