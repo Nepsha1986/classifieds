@@ -42,3 +42,4 @@ Next: Stage 3 — Listings CRUD and statuses (step 3.1).
 
 - 2026-10-10 — 3.1 — shared listing.ts: create/update/status input schemas, listingSchema output, scalar `attributes` map, status transition table + canChangeListingStatus; unit tests (shared 14) → next: 3.2
 - 2026-10-10 — 3.2 — listings.service: create (leaf category check, always active), get (paused only for seller), update (sold is read-only → 409), delete, changeStatus (transition table, idempotent); writes lock the row (SELECT … FOR UPDATE), 404 unknown/non-UUID id, 403 not owner; service tests + seededCategories helper (api 21) → next: 3.3
+- 2026-10-10 — 3.3 — routes/listings.ts: POST /api/listings (201 + Location), GET /:id (loadSession, paused only for seller), PATCH /:id, DELETE /:id (204); Request<{ id }> typing since Express 5 types drop params after a middleware; curl-verified → next: 3.4
