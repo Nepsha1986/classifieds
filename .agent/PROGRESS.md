@@ -46,3 +46,15 @@ Next: Stage 3 — Listings CRUD and statuses (step 3.1).
 - 2026-10-10 — 3.4 — PATCH /api/listings/:id/status (changeListingStatusInputSchema → service transition table); curl: active→paused→paused(no-op)→active→sold 200, sold→active 409, bad status 400, anon 401 → next: 3.5
 - 2026-10-10 — 3.5 — GET /api/me/listings: shared myListingsQuerySchema (pagination + optional status), listOwnListings returns Paginated<Listing> newest first (createdAt, id desc), page + count in parallel; curl-verified (pages, status filter, 400, 401) → next: 3.6
 - 2026-10-10 — 3.6 — test/listings.test.ts (HTTP): CRUD + Location, 404 unknown/malformed id, 401 on every write, 403 for non-owner (listing unchanged), 400 validation table (create/update/status, non-leaf category, malformed JSON), transitions incl. no-op and sold final/read-only/deletable, paused hidden, /api/me/listings ordering/pagination/status filter/empty/400 (api 42) → next: stage 3 acceptance
+
+### Stage 3 complete — Listings CRUD and statuses (2026-10-10)
+
+Verified by the verifier sub-agent: frozen install, lint, typecheck, format:check, tests (shared 14, api 42),
+`db:migrate` + `db:seed`, and a two-user curl flow (201/200/403/401/400/409/204/404 as designed).
+What works: `POST /api/listings`, `GET/PATCH/DELETE /api/listings/:id`, `PATCH /api/listings/:id/status`
+(active ↔ paused, → sold; sold final and read-only), `GET /api/me/listings` (paginated, `?status=`).
+Shared schemas: create/update/status inputs, `listingSchema`, `myListingsQuerySchema`, transition table.
+Paused listings are visible only to the seller; writes lock the row; leaf categories only.
+How to check: `pnpm test`; or run the API and use curl with a cookie jar (sign-up needs
+`Origin: http://localhost:5173`), then POST a listing with the `cars` category id.
+Next: Stage 4 — Categories and photo upload (step 4.1).
