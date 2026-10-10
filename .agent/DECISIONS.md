@@ -17,3 +17,9 @@ same credentials as `docker-compose.yml`; Docker files are still written and kep
 ## D4. Current major versions
 
 Express 5, Zod 4, Drizzle ORM 0.45 / drizzle-kit 0.31, better-auth 1.x, Next.js 16, Vitest for tests.
+
+## D5. Shared package resolution via a `source` export condition
+
+`@classifieds/shared` exports `source`/`types` → `src/index.ts` and `default` → `dist/index.js`. Dev tools
+(tsx, Vitest, Vite) resolve the `source` condition so no build is needed during development; production
+builds use the compiled `dist`.
