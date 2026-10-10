@@ -15,7 +15,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 1.5 Drizzle setup: connection, schema for categories, listings, listing_photos (auth tables come in Stage 2)
 - [x] 1.6 Migrations generated and applied; seed script for categories
 - [x] 1.7 Vitest in the API with a test DB; `/health` test that also checks the DB
-- [ ] 1.8 `docker-compose.yml` (postgres + api) and API `Dockerfile`
+- [x] 1.8 `docker-compose.yml` (postgres + api) and API `Dockerfile`
 - Acceptance: `pnpm lint && pnpm typecheck && pnpm test` green; `db:migrate` + `db:seed` work on an empty DB;
   `GET /health` returns `{ status: "ok", db: "ok" }`.
 

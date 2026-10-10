@@ -45,3 +45,10 @@ and drizzle-kit.
 sources) writes SQL to `apps/api/drizzle/`. `db:migrate` runs Drizzle's programmatic migrator, which also
 works from the compiled `dist/` inside Docker (no drizzle-kit in production). The category seed is
 idempotent (upsert by slug) so it is safe to run on every deploy.
+
+## D9. API image built with `pnpm deploy`
+
+The Dockerfile installs only the API's dependency subtree, builds shared + api, then `pnpm deploy --prod
+--legacy` produces a self-contained folder (dist, drizzle migrations, prod node_modules with the compiled
+shared package). The container runs migrations and the idempotent seed on start, then the server.
+Each package declares its own `typescript` devDependency because the filtered install skips the root.
