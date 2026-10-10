@@ -12,7 +12,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 1.2 ESLint (flat config) + Prettier at the root, `lint`/`format`/`typecheck` scripts
 - [x] 1.3 `packages/shared`: package skeleton, build setup, first Zod schemas (listing status, pagination)
 - [x] 1.4 `apps/api`: Express 5 skeleton, config loaded/validated with Zod, `/health` endpoint, error handler
-- [ ] 1.5 Drizzle setup: connection, schema for categories, listings, listing_photos (auth tables come in Stage 2)
+- [x] 1.5 Drizzle setup: connection, schema for categories, listings, listing_photos (auth tables come in Stage 2)
 - [ ] 1.6 Migrations generated and applied; seed script for categories
 - [ ] 1.7 Vitest in the API with a test DB; `/health` test that also checks the DB
 - [ ] 1.8 `docker-compose.yml` (postgres + api) and API `Dockerfile`
