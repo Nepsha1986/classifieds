@@ -36,7 +36,9 @@ describe('requireAuth', () => {
       .send({ email: 'require-auth@test.io', password: 'password123', name: 'Req' });
     expect(signUp.status).toBe(200);
 
-    const res = await request(app).get('/protected').set('Cookie', signUp.get('Set-Cookie') ?? []);
+    const res = await request(app)
+      .get('/protected')
+      .set('Cookie', signUp.get('Set-Cookie') ?? []);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ userId: signUp.body.user.id });
   });
