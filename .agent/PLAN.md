@@ -31,7 +31,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 
 ## Stage 3 — Listings CRUD and statuses
 
-- [ ] 3.1 Shared schemas: create/update listing input, listing output
+- [x] 3.1 Shared schemas: create/update listing input, listing output
 - [ ] 3.2 Service layer: create, get, update, delete with ownership checks
 - [ ] 3.3 Routes: `POST /api/listings`, `GET /api/listings/:id`, `PATCH`, `DELETE`
 - [ ] 3.4 Statuses active / sold / paused: `PATCH /api/listings/:id/status` with allowed transitions

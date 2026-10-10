@@ -1,0 +1,78 @@
+import { describe, expect, it } from 'vitest';
+import {
+  canChangeListingStatus,
+  changeListingStatusInputSchema,
+  createListingInputSchema,
+  updateListingInputSchema,
+} from './listing.js';
+
+const valid = { title: '  iPhone 13 ', description: 'Good condition', city: 'Kyiv', categoryId: 7 };
+
+describe('createListingInputSchema', () => {
+  it('applies defaults and normalizes values', () => {
+    expect(createListingInputSchema.parse({ ...valid, currency: 'usd' })).toEqual({
+      ...valid,
+      title: 'iPhone 13',
+      price: null,
+      currency: 'USD',
+      attributes: {},
+    });
+  });
+
+  it('accepts integer prices in minor units and scalar attributes', () => {
+    const parsed = createListingInputSchema.parse({
+      ...valid,
+      price: 1500000,
+      attributes: { storage: 128, used: true },
+    });
+    expect(parsed.price).toBe(1500000);
+    expect(parsed.attributes).toEqual({ storage: 128, used: true });
+  });
+
+  it('rejects invalid input', () => {
+    const bad = [
+      { ...valid, title: 'ab' },
+      { ...valid, price: -1 },
+      { ...valid, price: 10.5 },
+      { ...valid, currency: 'hryvnia' },
+      { ...valid, categoryId: '7' },
+      { ...valid, attributes: { 'bad key': 1 } },
+      { ...valid, attributes: { nested: { a: 1 } } },
+      { ...valid, status: 'sold' },
+      { ...valid, sellerId: 'someone' },
+      { title: 'Only a title' },
+    ];
+    for (const input of bad)
+      expect(createListingInputSchema.safeParse(input).success, JSON.stringify(input)).toBe(false);
+  });
+});
+
+describe('updateListingInputSchema', () => {
+  it('accepts partial updates, including clearing the price', () => {
+    expect(updateListingInputSchema.parse({ price: null })).toEqual({ price: null });
+    expect(updateListingInputSchema.parse({ city: ' Lviv ' })).toEqual({ city: 'Lviv' });
+  });
+
+  it('rejects empty updates, status and unknown fields', () => {
+    expect(updateListingInputSchema.safeParse({}).success).toBe(false);
+    expect(updateListingInputSchema.safeParse({ status: 'sold' }).success).toBe(false);
+    expect(updateListingInputSchema.safeParse({ foo: 1 }).success).toBe(false);
+  });
+});
+
+describe('listing status', () => {
+  it('validates the status input', () => {
+    expect(changeListingStatusInputSchema.safeParse({ status: 'paused' }).success).toBe(true);
+    expect(changeListingStatusInputSchema.safeParse({ status: 'deleted' }).success).toBe(false);
+  });
+
+  it('allows only the defined transitions', () => {
+    expect(canChangeListingStatus('active', 'paused')).toBe(true);
+    expect(canChangeListingStatus('paused', 'active')).toBe(true);
+    expect(canChangeListingStatus('active', 'sold')).toBe(true);
+    expect(canChangeListingStatus('paused', 'sold')).toBe(true);
+    expect(canChangeListingStatus('sold', 'active')).toBe(false);
+    expect(canChangeListingStatus('sold', 'paused')).toBe(false);
+    expect(canChangeListingStatus('sold', 'sold')).toBe(true);
+  });
+});
