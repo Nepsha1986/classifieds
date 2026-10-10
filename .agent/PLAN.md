@@ -31,12 +31,12 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 
 ## Stage 3 — Listings CRUD and statuses
 
-- [ ] 3.1 Shared schemas: create/update listing input, listing output
-- [ ] 3.2 Service layer: create, get, update, delete with ownership checks
-- [ ] 3.3 Routes: `POST /api/listings`, `GET /api/listings/:id`, `PATCH`, `DELETE`
-- [ ] 3.4 Statuses active / sold / paused: `PATCH /api/listings/:id/status` with allowed transitions
-- [ ] 3.5 `GET /api/me/listings` (own listings, any status)
-- [ ] 3.6 Tests for CRUD, ownership (403), validation (400), status transitions
+- [x] 3.1 Shared schemas: create/update listing input, listing output
+- [x] 3.2 Service layer: create, get, update, delete with ownership checks
+- [x] 3.3 Routes: `POST /api/listings`, `GET /api/listings/:id`, `PATCH`, `DELETE`
+- [x] 3.4 Statuses active / sold / paused: `PATCH /api/listings/:id/status` with allowed transitions
+- [x] 3.5 `GET /api/me/listings` (own listings, any status)
+- [x] 3.6 Tests for CRUD, ownership (403), validation (400), status transitions
 - Acceptance: tests green.
 
 ## Stage 4 — Categories and photo upload

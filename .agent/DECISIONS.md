@@ -81,3 +81,22 @@ clears `phone`/`city`). Email changes go through better-auth, not this endpoint.
 (`GET /api/users/:id`) shows `id`, `name`, `image`, `phone`, `city`, `createdAt` — the phone is the
 seller's contact on a classifieds board and is optional; the email stays private. Services return
 plain DTOs with ISO-string dates matching the shared schemas.
+
+## D14. Listing input rules and status transitions
+
+Create: `title` 3–120, `description` ≤5000, `price` integer minor units 0–2e9 or `null` (default),
+`currency` 3-letter ISO (upper-cased, default `UAH`), `city`, `categoryId`, `attributes` — a flat map of
+identifier keys → string/number/boolean (≤30 keys): flat scalars stay filterable via jsonb operators.
+Strict objects: `status`/`sellerId` cannot be set by the client. Update is a partial of the same fields;
+status changes have their own endpoint. Transitions: active ↔ paused, active/paused → sold; `sold` is
+final (re-selling means a new listing). Setting the current status again is an idempotent no-op. The
+transition table lives in `@classifieds/shared` so the merchant portal can show only valid actions.
+
+## D15. Listing visibility, ownership and errors
+
+`active` and `sold` listings are public (a sold item stays viewable, marked sold); `paused` is visible only
+to its seller — everyone else gets 404, so its existence is not leaked. Writes by a non-owner get 403
+(as the plan requires); unknown or non-UUID IDs get 404. A listing must use an existing leaf category
+(400 otherwise). Sold listings are read-only (409 on edit), but can still be deleted. Invalid status
+transitions are 409 Conflict (valid input, wrong state). Writes run in a transaction that locks the row
+(`SELECT … FOR UPDATE`) so the ownership/state check and the update cannot race.
