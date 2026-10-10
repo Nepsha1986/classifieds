@@ -8,7 +8,12 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "NODE_OPTIONS=--conditions=source drizzle-kit generate",
+    "db:migrate": "tsx --conditions=source src/db/migrate.ts",
+    "db:seed": "tsx --conditions=source src/db/seed.ts",
+    "db:migrate:prod": "node dist/db/migrate.js",
+    "db:seed:prod": "node dist/db/seed.js"
   },
   "dependencies": {
     "@classifieds/shared": "workspace:*",
