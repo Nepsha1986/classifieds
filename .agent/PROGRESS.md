@@ -136,3 +136,24 @@ Next: Stage 7 — Public dashboard (Next.js), step 7.1.
 - 2026-10-11 — 7.4 — `/listings/[id]`: breadcrumbs (category path → filtered feed links), gallery (cover + thumbnails linking to full images), description, details from `attributes` (humanized keys), price/city/date panel, "Sold" badge, seller panel (name → profile, city, member since, tel: link hidden for sold, "All listings by …"); unknown/malformed/paused → 404 page; listing and seller loaded once per request via React `cache`; metadata: title, description (price · city · summary), absolute canonical + Open Graph with photos (metadataBase from `SITE_URL`, read per request), schema.org Product/Offer JSON-LD (InStock/SoldOut, `<` escaped); checked with curl (tags, 404s, sold) and Playwright screenshots desktop/mobile (web 39) → next: 7.5
 - 2026-10-11 — 7.5 — API: `seller` (user UUID) filter on `GET /api/listings` (shared listingSearchQuerySchema + service condition; 400 for a non-UUID; API test: only that seller's active listings, combined with filters, unknown seller empty); web `/users/[id]`: profile panel (name, city, member since, tel: link), the seller's active listings (grid, 24 per page, `?page=` canonicalized with a redirect, past-the-end notice), metadata title/description/canonical; unknown or malformed id → 404; curl + Playwright screenshot on demo data (shared 44, api 120, web 39) → next: stage 7 acceptance
 - 2026-10-11 — 7.x — Playwright for web (`apps/web/e2e`, `pnpm --filter @classifieds/web e2e`, starts/reuses the API and a production `next build && next start`): with JavaScript disabled — feed, search form GET + canonical redirect, filters, price in major units, listing page (details, seller, tel:, breadcrumbs, canonical, description, JSON-LD), paused/unknown → 404 status, seller profile; with JavaScript — not-found UI and no console/hydration errors; 8 passing. Found: Next.js 16 renders the not-found UI of a page that calls `notFound()` in the browser (the HTML is its error shell, status 404) — reproduced in a blank Next 16.3/16.4 app, recorded as D34 → next: stage 7 acceptance
+
+### Stage 7 complete — Public dashboard (Next.js) (2026-10-11)
+
+Verified by the verifier sub-agent: frozen install, lint, format:check, typecheck, tests (shared 44, api 120,
+merchant 59, web 39), full-repo build, `db:generate` (no schema changes), web Playwright e2e 8/8 against the
+production build (JavaScript disabled for the SSR checks), merchant e2e 5/5 (no regressions), and a curl pass
+on the production server: feed HTML has listing cards, `/?q=iphone` results, `/?q=&city=` → 307 `/`, listing
+page with title/canonical/Open Graph/JSON-LD, seller page h1, unknown listing 404, `?seller=bad` → API 400.
+What works: `apps/web` (Next.js 16 App Router, server components only, rendered per request): `/` feed with
+pagination, search and filters (q, category slug incl. subtree, city, price in major units + currency,
+sort) in a plain GET form, one canonical URL per search; `/listings/[id]` (gallery, description, details,
+seller, sold badge, SEO metadata + schema.org Product); `/users/[id]` (seller profile + their active
+listings). API: `seller` filter on `GET /api/listings`. Formatters now live in `@classifieds/shared`.
+Env: `API_URL`, `PUBLIC_API_URL`, `SITE_URL` (read per request).
+How to check: `pnpm --filter @classifieds/api dev` + `pnpm --filter @classifieds/web dev`, open
+http://localhost:3000 (after `db:seed:demo`); or
+`PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium pnpm --filter @classifieds/web e2e`.
+Notes: `notFound()` pages are rendered client-side by Next.js 16 (status 404 is correct) — D34. The web
+app needs `@classifieds/shared` built (`predev`/`prebuild` do it) — D30; the web Dockerfile (8.1) must
+build shared first and pass `API_URL`/`PUBLIC_API_URL`/`SITE_URL` at runtime.
+Next: Stage 8 — Docker and finishing, step 8.1.
