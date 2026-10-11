@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
 import { db, pool } from '../src/db/client.js';
 import { categories, listings } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 import { toPrefixTsquery } from '../src/services/listings.service.js';
 import { seededCategories, signUpAgent } from './helpers.js';
 
@@ -86,6 +87,7 @@ type Query = Record<string, string | number | string[]>;
 
 const ids = {} as Record<Key, string>;
 const keyById = new Map<string, Key>();
+let sellerId: string;
 let cat: Record<'transport' | 'cars' | 'electronics' | 'phones', number>;
 
 beforeAll(async () => {
@@ -95,6 +97,7 @@ beforeAll(async () => {
   const rows = await db.select({ id: categories.id, slug: categories.slug }).from(categories);
   const bySlug = new Map(rows.map((r) => [r.slug, r.id]));
   const { user } = await signUpAgent(app);
+  sellerId = user.id;
   const now = Date.now();
   const entries = Object.entries(fixtures) as [Key, Fixture][];
   const inserted = await db
@@ -316,6 +319,33 @@ describe('pagination', () => {
   });
 });
 
+describe('seller', () => {
+  it("returns only that seller's active listings", async () => {
+    const { user: other } = await signUpAgent(app);
+    const [own] = await db
+      .insert(listings)
+      .values({
+        sellerId: other.id,
+        categoryId: cat.cars,
+        title: 'Other seller car',
+        description: 'Not from the fixtures seller',
+        price: 100,
+        city: 'Kyiv',
+      })
+      .returning({ id: listings.id });
+    try {
+      const mine = await search({ seller: sellerId });
+      expect(mine.keys).toEqual(['camry', 'bmw', 'honda', 'iphone', 'galaxy', 'lenovo']);
+      const theirs = await search({ seller: other.id });
+      expect(theirs.items.map((l) => l.id)).toEqual([own!.id]);
+      expect((await search({ seller: other.id, city: 'Lviv' })).total).toBe(0);
+      expect((await search({ seller: crypto.randomUUID() })).total).toBe(0);
+    } finally {
+      await db.delete(listings).where(eq(listings.id, own!.id));
+    }
+  });
+});
+
 describe('validation', () => {
   it.each<Query>([
     { page: 0 },
@@ -330,6 +360,7 @@ describe('validation', () => {
     { sort: 'relevance' },
     { q: 'x'.repeat(201) },
     { city: ['Kyiv', 'Lviv'] },
+    { seller: 'not-a-uuid' },
   ])('400 for %j', async (query) => {
     expect(await searchStatus(query)).toBe(400);
   });

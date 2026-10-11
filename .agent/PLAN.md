@@ -73,7 +73,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 7.2 Feed with pagination
 - [x] 7.3 Search and filters synced with the URL
 - [x] 7.4 Listing page (photos, seller), metadata for SEO
-- [ ] 7.5 Seller public profile page
+- [x] 7.5 Seller public profile page
 - Acceptance: build passes; pages render server-side (checked with Playwright).
 
 ## Stage 8 — Docker and finishing

@@ -287,3 +287,10 @@ tags with the photos, and schema.org `Product` + `Offer` JSON-LD (price in major
 Sold listings stay reachable and indexable (D15) but are marked sold and hide the call button; paused,
 deleted and malformed IDs all render the 404 page with a real 404 status. JSON-LD is serialized with
 `<` escaped so listing text cannot break out of the script tag.
+
+## D33. Seller profile listings come from the public search
+
+The seller page lists the seller's listings through `GET /api/listings?seller=<id>` instead of a new
+endpoint: it is the same public query (active only, sorting, pagination, the response schema) with one
+more condition, served by the `(seller_id, created_at)` index. Sold and paused listings are not shown on
+the profile, matching the feed (D21). `seller` must be a UUID (400 otherwise, like other malformed params).

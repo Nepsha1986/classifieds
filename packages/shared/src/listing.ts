@@ -128,6 +128,7 @@ const optionalParam = <T extends z.ZodType>(schema: T) =>
  * - `minPrice` / `maxPrice` — inclusive bounds in minor units; listings without a price are excluded
  *   when either bound is set;
  * - `currency` — restricts to one currency (price bounds are compared within it);
+ * - `seller` — user ID: only that seller's listings (a public seller profile);
  * - `sort` — defaults to `relevance` when `q` is set, otherwise `newest`.
  */
 export const listingSearchQuerySchema = paginationQuerySchema
@@ -144,6 +145,7 @@ export const listingSearchQuerySchema = paginationQuerySchema
         .toUpperCase()
         .regex(/^[A-Z]{3}$/, 'Currency must be a 3-letter ISO code'),
     ),
+    seller: optionalParam(z.uuid('Seller must be a user ID')),
     sort: optionalParam(listingSortSchema),
   })
   .refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
