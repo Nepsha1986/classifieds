@@ -85,3 +85,19 @@ Next: Stage 5 — Search, filters, pagination (step 5.1).
 - 2026-10-11 — 5.3 — migration 0002_search: generated search_vector (simple config, title A / description B) + GIN index; q → prefix tsquery from letters/digits (AND), @@ filter, relevance = ts_rank then newest (default sort with q); list queries skip the vector; curl-verified incl. Cyrillic prefixes and tsquery-syntax input (shared 33, api 77) → next: 5.4
 - 2026-10-11 — 5.4 — migration 0003_search_indexes: partial (status='active') indexes on (category_id, created_at), lower(city), price; seller index → (seller_id, created_at); status filter as SQL literal for partial-index matching; EXPLAIN-checked on 50k rows; db:seed:demo (3 demo sellers via better-auth, 36 listings, idempotent skip), demo sign-in verified (shared 33, api 77) → next: 5.5
 - 2026-10-11 — 5.5 — test/search.test.ts (HTTP, own fixtures on an emptied table): defaults (active only, newest, schema-valid, public, blank params), category subtree/leaf/unknown, city case-insensitive exact, inclusive price bounds + null excluded, currency, q (title ranked first, prefixes, AND, case, Cyrillic, paused/sold never found, tsquery syntax harmless, punctuation-only → empty), toPrefixTsquery unit, sorts incl. NULLS LAST and sort overriding relevance, combinations, pagination (pages, partial/past-end, after filters, max size), 400 table; seedDemo test (shared 33, api 115) → next: stage 5 acceptance
+
+### Stage 5 complete — Search, filters, pagination (2026-10-11)
+
+Verified by the verifier sub-agent: frozen install, lint, typecheck, format:check, tests (shared 33, api 115),
+fresh-DB `db:migrate` + `db:seed` + `db:seed:demo` (second run skipped), `db:generate` (no schema changes),
+and a curl flow on demo data: defaults (active only, newest first), category subtree, case-insensitive city,
+price bounds, currency, `q=iphone`, `q=вело`, price sort with null prices last, pagination consistency,
+400 for relevance without `q` and min > max; paused/sold listings never returned; demo sign-in 200.
+What works: public `GET /api/listings` with `q` (prefix full-text over title/description, ranked by
+`ts_rank`), `category` (incl. descendants), `city`, `minPrice`/`maxPrice`, `currency`, `sort`
+(relevance/newest/oldest/price_asc/price_desc), `page`/`pageSize` → `Paginated<Listing>` with `total`.
+Migrations 0002 (generated `search_vector` + GIN) and 0003 (partial indexes on active listings).
+`pnpm --filter @classifieds/api db:seed:demo` → 3 demo sellers (`*@demo.classifieds` / `demo-password`),
+36 listings.
+How to check: `pnpm test`; or `db:seed:demo`, run the API, `curl 'localhost:4000/api/listings?q=iphone&city=kyiv'`.
+Next: Stage 6 — Merchant portal (React), step 6.1.
