@@ -103,6 +103,8 @@ pnpm --filter @classifieds/web e2e        # server-rendered pages, checked with 
 ```
 
 Use `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium` to run them with an installed Chromium.
+Against the Docker stack the API runs in production mode and limits sign-ups to 3 per 10 seconds per
+client, so run the merchant specs one file at a time there.
 
 ## Architecture
 

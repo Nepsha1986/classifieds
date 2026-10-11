@@ -163,3 +163,21 @@ Next: Stage 8 — Docker and finishing, step 8.1.
 - 2026-10-11 — 8.1c — docker-compose: api healthcheck, merchant (:5173 → nginx :80, API_UPSTREAM) and web (:3000, API_URL/PUBLIC_API_URL/SITE_URL) waiting for a healthy API; .dockerignore drops Playwright output. `docker compose up` (images from the repo Dockerfiles; Docker Hub rate-limited a rebuild, D36) → all four healthy/up; merchant e2e 5/5 (specs spaced out) and web e2e 8/8 against the stack, API restart re-runs migrations cleanly, photo URLs in the dashboard HTML load. Found and fixed: better-auth saw no client IP in production (one shared rate-limit bucket) — nginx now sets X-Forwarded-For to the peer address (D38); checked: 4th sign-up in 10 s → 429 even with a spoofed header, no warning → next: 8.2
 - 2026-10-11 — 8.2 — README: apps table, Docker quick start (+ demo data from the host), local development (incl. no-Docker DB setup), env variable table, checks and e2e, architecture diagram and principles, API overview (every route, search params, status codes), layout; facts checked against the code (demo emails, pagination shape, transitions) and the demo-seed command run against the compose stack (36 listings, demo sign-in through nginx 200) → next: 8.3
 - 2026-10-11 — 8.3 (part) — final pass: lint, format, typecheck, tests (shared 44, api 120, merchant 59, web 39), `pnpm build` green; no TODO/FIXME left. Found: the API image shipped Next.js/React/vitest/drizzle-kit (better-auth optional peers resolved from the workspace, 669 MB node_modules, esbuild advisory) — `.pnpmfile.cjs` strips them (D39): 53 MB, `pnpm audit --prod` clean, Dockerfiles copy the pnpmfile; API + web images rebuilt, stack recreated and healthy. Merchant bundle left unsplit (D40). CLAUDE.md: Docker in cloud sessions. Pending: merchant image rebuild (Docker Hub rate limit on nginx metadata) → next: finish 8.3, stage acceptance
+- 2026-10-11 — 8.3 — merchant image rebuilt with the pnpmfile (after Docker Hub 429 retries) and the stack recreated; README notes the production sign-up limit for e2e against Docker → next: stage 8 acceptance
+
+### Stage 8 complete — Docker and finishing (2026-10-11)
+
+Verified by the verifier sub-agent: frozen install, lint, format:check, typecheck, tests (shared 44, api 120,
+merchant 59, web 39), `pnpm build`, `pnpm audit --prod` clean; the compose stack from the repo
+Dockerfiles: API health, merchant SPA routes + `/api` and `/uploads` through nginx + cookie sign-up/in,
+web feed/listing/404 and photo URLs; merchant e2e 5/5 (one spec at a time) and web e2e 8/8 against the
+stack; API image 53 MB node_modules with no Next.js/vitest/vite/drizzle-kit; per-client auth rate limit
+behind nginx (4th sign-up → 429 even with spoofed X-Forwarded-For); README routes, params, env and commands
+match the code.
+What works: `docker compose up --build` runs db, api (:4000, healthcheck), merchant (:5173, nginx serving
+the build and proxying the API) and web (:3000, Next.js standalone). README covers setup, Docker, local
+development, env, checks, architecture and the API.
+How to check: `docker compose up --build`, open http://localhost:5173 and http://localhost:3000; optional
+demo data: `pnpm --filter @classifieds/api db:seed:demo` from the host. In cloud sessions see D36.
+Known limits: auth requests sent straight to the API port (no proxy) share one rate-limit bucket (D38).
+Next: the plan is complete; new work starts with new stages in PLAN.md.
