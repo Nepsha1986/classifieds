@@ -14,7 +14,11 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.url(),
-  UPLOAD_DIR: z.string().default(path.join(apiRoot, 'uploads')),
+  // Relative paths are resolved against apps/api, so the location does not depend on the cwd.
+  UPLOAD_DIR: z
+    .string()
+    .default('uploads')
+    .transform((dir) => path.resolve(apiRoot, dir)),
   // Public URL of the API; better-auth builds callback URLs and cookie settings from it.
   BETTER_AUTH_URL: z.url().default('http://localhost:4000'),
   // Signing/encryption secret for sessions. Required in production.

@@ -100,3 +100,47 @@ to its seller — everyone else gets 404, so its existence is not leaked. Writes
 (400 otherwise). Sold listings are read-only (409 on edit), but can still be deleted. Invalid status
 transitions are 409 Conflict (valid input, wrong state). Writes run in a transaction that locks the row
 (`SELECT … FOR UPDATE`) so the ownership/state check and the update cannot race.
+
+## D16. Category tree endpoint
+
+`GET /api/categories` returns the whole tree (`{ id, parentId, slug, name, children }`, siblings by
+`sort_order`) in one response: it is a few dozen rows, read in one query and assembled in memory, and both
+frontends need the full tree for selects and filters. It is public and cacheable for 5 minutes because
+categories change only through the seed on deploy.
+
+## D17. Photo upload pipeline
+
+`POST /api/listings/:id/photos` takes `multipart/form-data` with files in the `photos` field (no text
+fields). Limits live in `@classifieds/shared`: JPEG/PNG/WebP, ≤5 MB each, ≤10 photos per listing in
+total. Order of checks: auth (401) → ownership/state pre-check before Multer reads the body (404/403/409
+for sold) so strangers cannot write to disk → Multer disk storage into `UPLOAD_DIR/tmp` with an early
+reject by declared type (415) and size/count limits (413/400) → the real format is detected from magic
+bytes (415; the client's Content-Type is only a hint) → under a row lock the count is re-checked (409 when
+the listing would exceed 10) and files are renamed to `UPLOAD_DIR/listings/<uuid>.<ext>` and inserted.
+Temp files are always removed; moved files are removed if the DB write fails. `tmp` sits inside
+`UPLOAD_DIR` so the rename stays on one filesystem (one Docker volume). File names are server-generated,
+never from the client. The response is 201 with all photos of the listing in order; photo URLs are
+API-relative paths (`/uploads/listings/...`). `UPLOAD_DIR` relative paths resolve against `apps/api`.
+Disk storage (not memory) keeps memory flat under many concurrent uploads.
+
+## D18. Photo serving, order and output
+
+Accepted photos are served by `express.static` at `/uploads/listings/<uuid>.<ext>` with a one-year
+`immutable` cache (names are never reused) and `nosniff`; the temp dir is not exposed. Photo URLs are
+unguessable, so photos of a paused listing are not hidden — the listing data itself is. Every listing
+response carries `photos` ordered by `position` (the first is the cover); lists load photos for all
+their listings in one query. Positions stay contiguous (0..n-1): uploads append, deletes renumber.
+`PUT /api/listings/:id/photos/order` takes the full list of the listing's photo IDs (400 for a partial
+or foreign list) — a full permutation is unambiguous and idempotent. Photos of a sold listing cannot be
+added, removed or reordered (409), like the rest of a sold listing. A deleted photo's file is removed
+after the transaction commits, so a rollback never leaves a row pointing at a missing file.
+
+## D19. File clean-up
+
+Files are removed after the transaction commits (listing delete, photo delete), best-effort: a failed
+`rm` is logged, never turned into a failed request, because the DB is the source of truth. What the
+normal paths cannot cover (a crash between the rename and the commit, rows removed by a DB-level cascade
+such as deleting a user, an aborted temp upload) is handled by `sweepUploads()` at server start: it
+removes temp files and photo files without a `listing_photos` row, but only when older than 1 hour so an
+upload in flight is never touched. better-auth user deletion is not enabled, so no API path cascades
+photos without going through the service.

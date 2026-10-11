@@ -1,7 +1,9 @@
 import { toNodeHandler } from 'better-auth/node';
 import express from 'express';
 import { auth } from './auth/auth.js';
+import { LISTING_PHOTOS_DIR, LISTING_PHOTOS_URL } from './lib/uploads.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import { categoriesRouter } from './routes/categories.js';
 import { healthRouter } from './routes/health.js';
 import { listingsRouter } from './routes/listings.js';
 import { meRouter } from './routes/me.js';
@@ -16,9 +18,23 @@ export function createApp() {
   // Sign-up / sign-in / sign-out etc. live under /api/auth/*.
   app.all('/api/auth/{*path}', toNodeHandler(auth));
 
+  // Photo files have random, never-reused names, so they can be cached forever. Only the accepted-photo
+  // dir is exposed (not the temp upload dir); missing files fall through to the JSON 404.
+  app.use(
+    LISTING_PHOTOS_URL,
+    express.static(LISTING_PHOTOS_DIR, {
+      index: false,
+      dotfiles: 'deny',
+      immutable: true,
+      maxAge: '365d',
+      setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
+    }),
+  );
+
   app.use(express.json({ limit: '1mb' }));
 
   app.use(healthRouter);
+  app.use(categoriesRouter);
   app.use(meRouter);
   app.use(usersRouter);
   app.use(listingsRouter);

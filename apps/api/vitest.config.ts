@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
+import { TEST_UPLOAD_DIR } from './test/upload-dir.js';
 
 for (const file of ['.env', '../../.env']) {
   if (existsSync(file)) process.loadEnvFile(file);
@@ -16,6 +17,6 @@ export default defineConfig({
     // All test files share one database, so run them one after another.
     fileParallelism: false,
     globalSetup: ['./test/global-setup.ts'],
-    env: { NODE_ENV: 'test', DATABASE_URL: testDatabaseUrl },
+    env: { NODE_ENV: 'test', DATABASE_URL: testDatabaseUrl, UPLOAD_DIR: TEST_UPLOAD_DIR },
   },
 });

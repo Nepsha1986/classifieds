@@ -58,3 +58,24 @@ Paused listings are visible only to the seller; writes lock the row; leaf catego
 How to check: `pnpm test`; or run the API and use curl with a cookie jar (sign-up needs
 `Origin: http://localhost:5173`), then POST a listing with the `cars` category id.
 Next: Stage 4 — Categories and photo upload (step 4.1).
+
+- 2026-10-10 — 4.1 — shared category.ts (recursive categorySchema/categoryTreeSchema, categorySubtreeIds for later filters); categories.service builds the tree from one ordered query; GET /api/categories (public, Cache-Control max-age=300); tests (shared 20, api 44), curl-verified → next: 4.2
+- 2026-10-10 — 4.2 — multer 2.4: POST /api/listings/:id/photos (field `photos`, ≤5 MB each, JPEG/PNG/WebP, ≤10 per listing); ownership pre-check before the body is read, then multer to UPLOAD_DIR/tmp, magic-byte check, rename into UPLOAD_DIR/listings under a row lock, temp files always removed; shared photo.ts (limits + listingPhotoSchema); UPLOAD_DIR resolved against apps/api; tests use a temp upload dir; curl-verified 201/415/413/403/401/400/409 → next: 4.3
+- 2026-10-10 — 4.3 — static /uploads/listings (immutable 1y cache, nosniff, tmp not exposed, JSON 404); listing output gains ordered `photos` (batch-loaded in one query for lists); PUT /api/listings/:id/photos/order (full permutation, shared reorderListingPhotosInputSchema); DELETE /api/listings/:id/photos/:photoId (204, positions compacted, file removed after commit); ownership helpers moved to services/listing-access.ts; curl-verified (shared 28, api 44) → next: 4.4
+- 2026-10-10 — 4.4 — deleteListing collects photo file names in the transaction and removes the files after commit (photo delete already did, 4.3); services/upload-sweep.ts: startup safety net removes temp files and unreferenced photo files older than 1 h; test helper pngBytes(); sweep test (api 45); curl-verified listing delete removes its files → next: 4.5
+- 2026-10-10 — 4.5 — test/photos.test.ts (HTTP): upload + download by URL (bytes, content-type, nosniff, immutable), JPEG/WebP named by real bytes, photos in listing and /api/me/listings, 415 declared/real type (all-or-nothing), 413 over limit and exact limit ok, 400 per request / 409 per listing, 400 no files / wrong field / text field, 401/403 (nothing written)/404, sold 409, paused ok, reorder 200/400/403/401, photo delete (file gone, positions compacted, 404 again, foreign photo 404, sold 409), listing delete removes files, temp dir empty and not served; test/uploads.test.ts magic bytes; categories tests from 4.1 (shared 28, api 77) → next: stage 4 acceptance
+
+### Stage 4 complete — Categories and photo upload (2026-10-10)
+
+Verified by the verifier sub-agent: frozen install, lint, typecheck, format:check, tests (shared 28, api 77),
+`db:migrate` + `db:seed`, `db:generate` (no schema changes), API build, and a curl flow: category tree,
+PNG upload 201 → download by URL 200 `image/png` with identical bytes, 415 (declared and real type),
+413, 403, 401, reorder, photo delete (file removed, positions compacted), listing delete (files removed),
+temp dir empty.
+What works: `GET /api/categories` (tree), `POST /api/listings/:id/photos` (multipart `photos`, JPEG/PNG/WebP
+by magic bytes, ≤5 MB, ≤10 per listing), static `/uploads/listings/*`, `PUT /api/listings/:id/photos/order`,
+`DELETE /api/listings/:id/photos/:photoId`; every listing response has ordered `photos`; files are removed
+on photo/listing delete; a startup sweep removes stale temp and orphaned photo files.
+How to check: `pnpm test`; or run the API, sign up with a cookie jar (`Origin: http://localhost:5173`),
+create a listing, `curl -b jar -F photos=@a.png localhost:4000/api/listings/<id>/photos`, then GET the `url`.
+Next: Stage 5 — Search, filters, pagination (step 5.1).

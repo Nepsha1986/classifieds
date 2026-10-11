@@ -41,11 +41,11 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 
 ## Stage 4 — Categories and photo upload
 
-- [ ] 4.1 `GET /api/categories` (tree: parent/children)
-- [ ] 4.2 Multer upload to local disk: `POST /api/listings/:id/photos` (type/size/count limits)
-- [ ] 4.3 Serve uploads statically; `DELETE /api/listings/:id/photos/:photoId`; photo ordering
-- [ ] 4.4 Delete files from disk when a listing or photo is deleted
-- [ ] 4.5 Tests for categories and upload (valid image, wrong type, too large, not owner)
+- [x] 4.1 `GET /api/categories` (tree: parent/children)
+- [x] 4.2 Multer upload to local disk: `POST /api/listings/:id/photos` (type/size/count limits)
+- [x] 4.3 Serve uploads statically; `DELETE /api/listings/:id/photos/:photoId`; photo ordering
+- [x] 4.4 Delete files from disk when a listing or photo is deleted
+- [x] 4.5 Tests for categories and upload (valid image, wrong type, too large, not owner)
 - Acceptance: tests green; uploaded photo is downloadable by URL.
 
 ## Stage 5 — Search, filters, pagination
