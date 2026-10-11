@@ -163,3 +163,14 @@ offered in search. The category subtree is resolved in SQL with a recursive CTE 
 query needs no round trip for the category tree; an unknown category gives an empty page (200), not 400,
 because a stale link is not a client error. Every sort ends with `id` as a tie-breaker so offset pages
 never overlap or skip rows.
+
+## D22. Full-text search
+
+`listings.search_vector` is a stored generated column — `setweight(to_tsvector('simple', title), 'A') ||
+setweight(to_tsvector('simple', description), 'B')` — with a GIN index, so it can never drift from the
+row and needs no triggers. The `simple` config (lower-casing, no stemming) is used because listings are
+in Ukrainian, Russian and English and PostgreSQL ships no Ukrainian stemmer; instead every query word is a
+prefix match (`вело` finds `велосипед`), and all words must match (AND). The tsquery is built in the
+service from letters/digits only (`\p{L}\p{N}`) and passed as a bind parameter, so user input is never
+tsquery syntax; a `q` with nothing searchable (`!!!`) matches nothing. Relevance is `ts_rank` (title hits
+rank higher), then newest. List queries do not select the vector.

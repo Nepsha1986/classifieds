@@ -10,7 +10,20 @@ import {
   type UpdateListingInput,
   canChangeListingStatus,
 } from '@classifieds/shared';
-import { type SQL, and, asc, count, desc, eq, exists, gte, inArray, lte, sql } from 'drizzle-orm';
+import {
+  type SQL,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  getTableColumns,
+  gte,
+  inArray,
+  lte,
+  sql,
+} from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { categories, listingPhotos, listings } from '../db/schema.js';
 import { badRequest, conflict } from '../lib/http-error.js';
@@ -18,7 +31,9 @@ import { listingPhotoPath } from '../lib/uploads.js';
 import { type Executor, isListingId, listingNotFound, lockOwnListing } from './listing-access.js';
 import { photosByListing, removeFiles } from './photos.service.js';
 
-type ListingRow = typeof listings.$inferSelect;
+// The search vector is an internal column: list queries leave it out.
+const { searchVector, ...listingColumns } = getTableColumns(listings);
+type ListingRow = Omit<typeof listings.$inferSelect, 'searchVector'>;
 
 /** Statuses anyone can see; a paused listing is visible only to its seller. */
 const PUBLIC_STATUSES: readonly ListingStatus[] = ['active', 'sold'];
@@ -143,7 +158,7 @@ export async function listOwnListings(
   const where = and(eq(listings.sellerId, sellerId), status ? eq(listings.status, status) : undefined);
   const [rows, [totals]] = await Promise.all([
     db
-      .select()
+      .select(listingColumns)
       .from(listings)
       .where(where)
       .orderBy(desc(listings.createdAt), desc(listings.id))
@@ -167,10 +182,28 @@ function categorySubtree(categoryId: number) {
   )`;
 }
 
-function searchConditions(query: ListingSearchQuery): SQL | undefined {
+/**
+ * Turns free text into a prefix tsquery: every word must match the start of a word in the listing
+ * (`iph 13` → `iph:* & 13:*`). Only letters and digits are kept, so user input can never be tsquery
+ * syntax. Returns null when nothing searchable is left (e.g. `q=!!!`).
+ */
+export function toPrefixTsquery(q: string): string | null {
+  const words = q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  return words.length > 0 ? words.map((w) => `${w}:*`).join(' & ') : null;
+}
+
+function textQuery(q: string | undefined): SQL | undefined {
+  if (q === undefined) return undefined;
+  const tsquery = toPrefixTsquery(q);
+  // Nothing searchable in `q`: match nothing rather than silently ignoring the search.
+  return tsquery === null ? sql`NULL::tsquery` : sql`to_tsquery('simple', ${tsquery})`;
+}
+
+function searchConditions(query: ListingSearchQuery, text: SQL | undefined): SQL | undefined {
   const { category, city, minPrice, maxPrice, currency } = query;
   return and(
     eq(listings.status, 'active'),
+    text !== undefined ? sql`${searchVector} @@ ${text}` : undefined,
     category !== undefined ? inArray(listings.categoryId, categorySubtree(category)) : undefined,
     city !== undefined ? sql`lower(${listings.city}) = lower(${city})` : undefined,
     currency !== undefined ? eq(listings.currency, currency) : undefined,
@@ -180,10 +213,12 @@ function searchConditions(query: ListingSearchQuery): SQL | undefined {
   );
 }
 
-function searchOrder(query: ListingSearchQuery): SQL[] {
+function searchOrder(query: ListingSearchQuery, text: SQL | undefined): SQL[] {
   // `id` breaks ties so pages never overlap or skip rows.
   const newest = [desc(listings.createdAt), desc(listings.id)];
-  switch (query.sort ?? 'newest') {
+  switch (query.sort ?? (text !== undefined ? 'relevance' : 'newest')) {
+    case 'relevance':
+      return text !== undefined ? [sql`ts_rank(${searchVector}, ${text}) DESC`, ...newest] : newest;
     case 'oldest':
       return [asc(listings.createdAt), asc(listings.id)];
     case 'price_asc':
@@ -198,13 +233,14 @@ function searchOrder(query: ListingSearchQuery): SQL[] {
 /** Public search: active listings only, filtered, sorted and paginated. */
 export async function searchListings(query: ListingSearchQuery): Promise<Paginated<Listing>> {
   const { page, pageSize } = query;
-  const where = searchConditions(query);
+  const text = textQuery(query.q);
+  const where = searchConditions(query, text);
   const [rows, [totals]] = await Promise.all([
     db
-      .select()
+      .select(listingColumns)
       .from(listings)
       .where(where)
-      .orderBy(...searchOrder(query))
+      .orderBy(...searchOrder(query, text))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ total: count() }).from(listings).where(where),

@@ -1,9 +1,10 @@
 import { LISTING_STATUSES } from '@classifieds/shared';
-import { sql } from 'drizzle-orm';
+import { type SQL, sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
   boolean,
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -95,6 +96,8 @@ export const verifications = pgTable(
 
 // --- Listings ---
 
+const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
+
 export const listingStatus = pgEnum('listing_status', LISTING_STATUSES);
 
 export const categories = pgTable(
@@ -128,9 +131,19 @@ export const listings = pgTable(
     status: listingStatus('status').notNull().default('active'),
     // Niche-specific fields (e.g. mileage, rooms, size) without schema changes.
     attributes: jsonb('attributes').$type<Record<string, unknown>>().notNull().default({}),
+    // Full-text search document: the title weighs more than the description. The `simple` config only
+    // lower-cases words (no stemming), so Ukrainian, Russian and English text is treated alike;
+    // queries use prefix matching instead (see listings.service).
+    searchVector: tsvector('search_vector')
+      .notNull()
+      .generatedAlwaysAs(
+        (): SQL =>
+          sql`setweight(to_tsvector('simple', ${listings.title}), 'A') || setweight(to_tsvector('simple', ${listings.description}), 'B')`,
+      ),
     ...timestamps,
   },
   (t) => [
+    index('listings_search_idx').using('gin', t.searchVector),
     index('listings_seller_idx').on(t.sellerId),
     index('listings_category_idx').on(t.categoryId),
     index('listings_status_created_idx').on(t.status, t.createdAt),
