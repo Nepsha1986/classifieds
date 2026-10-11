@@ -70,7 +70,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 ## Stage 7 — Public dashboard (Next.js)
 
 - [x] 7.1 Next.js app (App Router), server-side data fetching from the API
-- [ ] 7.2 Feed with pagination
+- [x] 7.2 Feed with pagination
 - [ ] 7.3 Search and filters synced with the URL
 - [ ] 7.4 Listing page (photos, seller), metadata for SEO
 - [ ] 7.5 Seller public profile page
