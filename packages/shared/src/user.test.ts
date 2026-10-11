@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { updateProfileInputSchema } from './user.js';
+import {
+  PASSWORD_MIN_LENGTH,
+  signInInputSchema,
+  signUpInputSchema,
+  updateProfileInputSchema,
+} from './user.js';
 
 describe('updateProfileInputSchema', () => {
   it('accepts a partial update and trims values', () => {
@@ -19,5 +24,33 @@ describe('updateProfileInputSchema', () => {
     expect(updateProfileInputSchema.safeParse({}).success).toBe(false);
     expect(updateProfileInputSchema.safeParse({ email: 'a@b.c' }).success).toBe(false);
     expect(updateProfileInputSchema.safeParse({ name: '   ' }).success).toBe(false);
+  });
+});
+
+describe('signUpInputSchema', () => {
+  it('trims the name and normalizes the email', () => {
+    expect(
+      signUpInputSchema.parse({ name: ' Ann ', email: ' Ann@Example.COM ', password: 'password1' }),
+    ).toEqual({ name: 'Ann', email: 'ann@example.com', password: 'password1' });
+  });
+
+  it('rejects a short password, an invalid email and an empty name', () => {
+    const result = signUpInputSchema.safeParse({
+      name: ' ',
+      email: 'nope',
+      password: 'x'.repeat(PASSWORD_MIN_LENGTH - 1),
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((i) => i.path[0]).sort()).toEqual(['email', 'name', 'password']);
+  });
+});
+
+describe('signInInputSchema', () => {
+  it('requires an email and a password', () => {
+    expect(signInInputSchema.safeParse({ email: 'a@b.io', password: '' }).success).toBe(false);
+    expect(signInInputSchema.parse({ email: 'A@B.io', password: 'x' })).toEqual({
+      email: 'a@b.io',
+      password: 'x',
+    });
   });
 });

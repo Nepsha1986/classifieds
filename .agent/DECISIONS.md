@@ -203,3 +203,24 @@ better-auth's endpoints, no better-auth client library. By default the app calls
 origin and the Vite dev server proxies `/api` and `/uploads` (no CORS, cookies are first-party); with
 `VITE_API_URL` set it calls the API cross-origin, which the API allows via CORS with credentials for
 `TRUSTED_ORIGINS` only. Client 4xx errors are not retried. Vite reads the repo-root `.env`.
+
+## D26. Merchant auth flow
+
+The session lives only in better-auth's httpOnly cookie; the app never sees a token. `GET /api/me` is the
+source of truth: the `['me']` query holds the profile or `null` (401). `RequireAuth` wraps every app route
+and redirects to `/login?next=<path>`; `GuestOnly` sends signed-in users away from `/login`/`/register`.
+`next` is followed only for same-app paths (`/…`, not `//…`), so it cannot become an open redirect. On
+sign-in/up/out every other cached query is removed before the new user is stored, so one user's listings
+never show for the next; `me` itself is overwritten, not removed, because mounted observers would keep
+watching a removed query. Any 401 from any request sets `me` to `null`, which sends the user to sign-in
+when the session expires. Forms use react-hook-form with the shared Zod schemas (`signUpInputSchema`,
+`signInInputSchema`); the password limits are shared constants that also configure better-auth.
+
+## D27. End-to-end checks with Playwright
+
+`apps/merchant/e2e` holds Playwright specs that drive the real app against the real API and database;
+`playwright.config.ts` starts (or reuses) the API and Vite dev servers. They are not part of `pnpm test`
+(they need a migrated database and a browser) and run with `pnpm --filter @classifieds/merchant e2e`.
+In cloud sessions the preinstalled Chromium is used via `PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium`
+(its revision differs from the one Playwright would download). Unit/component tests (Vitest + jsdom +
+Testing Library) mock `fetch` with a small fake API.

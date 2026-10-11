@@ -8,6 +8,8 @@ import {
   type CreateListingInput,
   type MyListingsQuery,
   type ReorderListingPhotosInput,
+  type SignInInput,
+  type SignUpInput,
   type UpdateListingInput,
   type UpdateProfileInput,
   PHOTO_UPLOAD_FIELD,
@@ -17,9 +19,6 @@ import { apiRequest } from './client';
 
 const listingPageSchema = paginatedSchema(listingSchema);
 const photosSchema = z.array(listingPhotoSchema);
-
-export type SignUpInput = { name: string; email: string; password: string };
-export type SignInInput = { email: string; password: string };
 
 /** better-auth endpoints (DECISIONS D12). The session cookie is set and cleared by the API. */
 export const authApi = {
