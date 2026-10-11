@@ -17,6 +17,7 @@ export function Layout() {
               <NavLink to="/" end>
                 My listings
               </NavLink>
+              <NavLink to="/listings/new">New listing</NavLink>
             </nav>
             <div className="app-user">
               <span className="muted">{me.data.name}</span>

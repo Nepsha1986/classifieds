@@ -6,7 +6,7 @@ import {
   type ListingStatus,
 } from '@classifieds/shared';
 import { useMemo } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { apiUrl } from '../api/client';
 import { FormError } from '../components/form';
 import { StatusBadge, STATUS_LABELS } from '../components/StatusBadge';
@@ -64,6 +64,9 @@ export function MyListingsPage() {
     <section>
       <div className="page-header">
         <h1>My listings</h1>
+        <Link to="/listings/new" className="button primary">
+          New listing
+        </Link>
       </div>
 
       <nav className="tabs" aria-label="Filter by status">
@@ -118,7 +121,9 @@ export function MyListingsPage() {
                     </div>
                     <div className="listing-info">
                       <div className="listing-title">
-                        <strong>{listing.title}</strong>
+                        <Link to={`/listings/${listing.id}/edit`} className="listing-link">
+                          {listing.title}
+                        </Link>
                         <StatusBadge status={listing.status} />
                       </div>
                       <div>{formatPrice(listing.price, listing.currency)}</div>
@@ -129,6 +134,11 @@ export function MyListingsPage() {
                       </div>
                     </div>
                     <div className="listing-actions">
+                      {listing.status !== 'sold' && (
+                        <Link to={`/listings/${listing.id}/edit`} className="button">
+                          Edit
+                        </Link>
+                      )}
                       {LISTING_STATUS_TRANSITIONS[listing.status].map((to) => (
                         <button
                           key={to}

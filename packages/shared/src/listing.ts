@@ -43,8 +43,16 @@ export const listingAttributesSchema = z
 export type ListingAttributes = z.infer<typeof listingAttributesSchema>;
 
 const listingFields = {
-  title: z.string().trim().min(3).max(LISTING_TITLE_MAX),
-  description: z.string().trim().min(1).max(LISTING_DESCRIPTION_MAX),
+  title: z
+    .string()
+    .trim()
+    .min(3, 'Title must be at least 3 characters')
+    .max(LISTING_TITLE_MAX, `Title must be at most ${LISTING_TITLE_MAX} characters`),
+  description: z
+    .string()
+    .trim()
+    .min(1, 'Description is required')
+    .max(LISTING_DESCRIPTION_MAX, `Description must be at most ${LISTING_DESCRIPTION_MAX} characters`),
   /** Minor currency units (kopecks/cents); `null` means "price on request". */
   price: z.number().int().min(0).max(2_000_000_000).nullable(),
   currency: z
@@ -52,7 +60,7 @@ const listingFields = {
     .trim()
     .toUpperCase()
     .regex(/^[A-Z]{3}$/, 'Currency must be a 3-letter ISO code'),
-  city: z.string().trim().min(1).max(100),
+  city: z.string().trim().min(1, 'City is required').max(100, 'City must be at most 100 characters'),
   categoryId: z.number().int().positive(),
   attributes: listingAttributesSchema,
 };

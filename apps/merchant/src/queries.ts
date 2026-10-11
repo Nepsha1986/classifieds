@@ -1,4 +1,9 @@
-import type { ListingStatus, MyListingsQuery } from '@classifieds/shared';
+import type {
+  CreateListingInput,
+  ListingStatus,
+  MyListingsQuery,
+  UpdateListingInput,
+} from '@classifieds/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, listingsApi, meApi } from './api/endpoints';
 
@@ -40,6 +45,32 @@ export function useDeleteListing() {
     mutationFn: (id: string) => listingsApi.remove(id),
     onSuccess: (_data, id) => {
       queryClient.removeQueries({ queryKey: queryKeys.listing(id) });
+      return queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
+    },
+  });
+}
+
+export function useListing(id: string) {
+  return useQuery({ queryKey: queryKeys.listing(id), queryFn: () => listingsApi.get(id) });
+}
+
+export function useCreateListing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateListingInput) => listingsApi.create(input),
+    onSuccess: (listing) => {
+      queryClient.setQueryData(queryKeys.listing(listing.id), listing);
+      return queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
+    },
+  });
+}
+
+export function useUpdateListing(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateListingInput) => listingsApi.update(id, input),
+    onSuccess: (listing) => {
+      queryClient.setQueryData(queryKeys.listing(listing.id), listing);
       return queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
     },
   });

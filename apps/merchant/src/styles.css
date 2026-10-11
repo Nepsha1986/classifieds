@@ -299,10 +299,6 @@ textarea:focus {
   flex-wrap: wrap;
 }
 
-.listing-title strong {
-  overflow-wrap: anywhere;
-}
-
 .listing-actions {
   display: flex;
   flex-wrap: wrap;
@@ -340,4 +336,46 @@ textarea:focus {
     grid-column: 1 / -1;
     justify-content: flex-start;
   }
+}
+
+.narrow {
+  max-width: 640px;
+}
+
+a.button {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.listing-link {
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.listing-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: #eef4ff;
+  border: 1px solid #c9dafc;
 }

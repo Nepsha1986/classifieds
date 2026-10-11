@@ -224,3 +224,15 @@ when the session expires. Forms use react-hook-form with the shared Zod schemas 
 In cloud sessions the preinstalled Chromium is used via `PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium`
 (its revision differs from the one Playwright would download). Unit/component tests (Vitest + jsdom +
 Testing Library) mock `fetch` with a small fake API.
+
+## D28. Listing form: shared schema as the only rule set, attributes not edited
+
+Form fields hold text as typed; a custom react-hook-form resolver converts it (price in major units →
+integer minor units using the currency's digits, accepting spaces and a comma; select value → category
+ID) and validates with the shared `createListingInputSchema`, mapping issues back to fields — the client
+keeps no second copy of the listing rules, and the shared schema's messages are written for people. An
+empty price means "price on request". Only leaf categories are offered, grouped by top-level category.
+The edit form sends every core field in the PATCH but never `attributes`, so niche attributes set
+through the API are kept; an attributes editor is left out until a niche needs it (values need types
+per category). After creating a listing the user lands on its edit page, because photos can only be
+attached to an existing listing. Sold listings open read-only.

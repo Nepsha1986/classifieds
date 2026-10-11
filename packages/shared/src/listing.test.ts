@@ -138,3 +138,19 @@ describe('listingSearchQuerySchema', () => {
       expect(listingSearchQuerySchema.safeParse(input).success, JSON.stringify(input)).toBe(false);
   });
 });
+
+describe('listing input messages', () => {
+  it('explains what is wrong in plain words', () => {
+    const result = createListingInputSchema.safeParse({
+      title: 'ab',
+      description: ' ',
+      city: '',
+      categoryId: 1,
+    });
+    expect(result.error?.issues.map((i) => i.message).sort()).toEqual([
+      'City is required',
+      'Description is required',
+      'Title must be at least 3 characters',
+    ]);
+  });
+});
