@@ -3,13 +3,14 @@ import {
   type ListingPhoto,
   type CreateListingInput,
   type Listing,
+  type ListingSearchQuery,
   type ListingStatus,
   type MyListingsQuery,
   type Paginated,
   type UpdateListingInput,
   canChangeListingStatus,
 } from '@classifieds/shared';
-import { and, count, desc, eq, exists } from 'drizzle-orm';
+import { type SQL, and, asc, count, desc, eq, exists, gte, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { categories, listingPhotos, listings } from '../db/schema.js';
 import { badRequest, conflict } from '../lib/http-error.js';
@@ -146,6 +147,64 @@ export async function listOwnListings(
       .from(listings)
       .where(where)
       .orderBy(desc(listings.createdAt), desc(listings.id))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ total: count() }).from(listings).where(where),
+  ]);
+  const total = totals?.total ?? 0;
+  return { items: await withPhotos(rows), page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
+}
+
+/** A category and all of its descendants, as a subquery (recursive CTE over `parent_id`). */
+function categorySubtree(categoryId: number) {
+  return sql`(
+    WITH RECURSIVE subtree AS (
+      SELECT ${categories.id} AS id FROM ${categories} WHERE ${categories.id} = ${categoryId}
+      UNION ALL
+      SELECT c.id FROM ${categories} c JOIN subtree s ON c.parent_id = s.id
+    )
+    SELECT id FROM subtree
+  )`;
+}
+
+function searchConditions(query: ListingSearchQuery): SQL | undefined {
+  const { category, city, minPrice, maxPrice, currency } = query;
+  return and(
+    eq(listings.status, 'active'),
+    category !== undefined ? inArray(listings.categoryId, categorySubtree(category)) : undefined,
+    city !== undefined ? sql`lower(${listings.city}) = lower(${city})` : undefined,
+    currency !== undefined ? eq(listings.currency, currency) : undefined,
+    // A null price ("on request") never satisfies a bound, so those listings drop out.
+    minPrice !== undefined ? gte(listings.price, minPrice) : undefined,
+    maxPrice !== undefined ? lte(listings.price, maxPrice) : undefined,
+  );
+}
+
+function searchOrder(query: ListingSearchQuery): SQL[] {
+  // `id` breaks ties so pages never overlap or skip rows.
+  const newest = [desc(listings.createdAt), desc(listings.id)];
+  switch (query.sort ?? 'newest') {
+    case 'oldest':
+      return [asc(listings.createdAt), asc(listings.id)];
+    case 'price_asc':
+      return [sql`${listings.price} ASC NULLS LAST`, ...newest];
+    case 'price_desc':
+      return [sql`${listings.price} DESC NULLS LAST`, ...newest];
+    default:
+      return newest;
+  }
+}
+
+/** Public search: active listings only, filtered, sorted and paginated. */
+export async function searchListings(query: ListingSearchQuery): Promise<Paginated<Listing>> {
+  const { page, pageSize } = query;
+  const where = searchConditions(query);
+  const [rows, [totals]] = await Promise.all([
+    db
+      .select()
+      .from(listings)
+      .where(where)
+      .orderBy(...searchOrder(query))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ total: count() }).from(listings).where(where),

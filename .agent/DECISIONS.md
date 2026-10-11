@@ -155,3 +155,11 @@ set). Price bounds are inclusive minor units; "price on request" (`null`) listin
 is set. Prices in different currencies are not converted: a client that filters by price should also send
 `currency`. Sorts: `relevance` (only with `q`, 400 otherwise), `newest` (default without `q`), `oldest`,
 `price_asc`/`price_desc` (no-price listings last). Repeated params (`?city=a&city=b`) are 400.
+
+## D21. Search results contain only active listings
+
+The public feed shows `active` listings only: sold items stay reachable by direct link (D15) but are not
+offered in search. The category subtree is resolved in SQL with a recursive CTE over `parent_id`, so the
+query needs no round trip for the category tree; an unknown category gives an empty page (200), not 400,
+because a stale link is not a client error. Every sort ends with `id` as a tie-breaker so offset pages
+never overlap or skip rows.

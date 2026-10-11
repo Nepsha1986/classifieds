@@ -51,7 +51,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 ## Stage 5 — Search, filters, pagination
 
 - [x] 5.1 Shared query schema: q, category (incl. children), city, price min/max, sort, page, pageSize
-- [ ] 5.2 `GET /api/listings` — only active listings, filters, sorting, paginated response with total
+- [x] 5.2 `GET /api/listings` — only active listings, filters, sorting, paginated response with total
 - [ ] 5.3 Full-text search via PostgreSQL `tsvector` + GIN index (migration)
 - [ ] 5.4 Indexes for filter columns; demo seed with sample users/listings
 - [ ] 5.5 Tests for each filter, combinations, pagination edges
