@@ -1,6 +1,7 @@
 import {
   changeListingStatusInputSchema,
   createListingInputSchema,
+  listingSearchQuerySchema,
   reorderListingPhotosInputSchema,
   updateListingInputSchema,
 } from '@classifieds/shared';
@@ -12,6 +13,7 @@ import {
   createListing,
   deleteListing,
   getListing,
+  searchListings,
   updateListing,
 } from '../services/listings.service.js';
 import {
@@ -27,6 +29,11 @@ type ListingRequest = Request<{ id: string }>;
 type PhotoRequest = Request<{ id: string; photoId: string }>;
 
 export const listingsRouter = Router();
+
+listingsRouter.get('/api/listings', async (req, res) => {
+  const query = listingSearchQuerySchema.parse(req.query);
+  res.json(await searchListings(query));
+});
 
 listingsRouter.post('/api/listings', requireAuth, async (req, res) => {
   const input = createListingInputSchema.parse(req.body);

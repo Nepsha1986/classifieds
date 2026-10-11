@@ -144,3 +144,50 @@ such as deleting a user, an aborted temp upload) is handled by `sweepUploads()` 
 removes temp files and photo files without a `listing_photos` row, but only when older than 1 hour so an
 upload in flight is never touched. better-auth user deletion is not enabled, so no API path cascades
 photos without going through the service.
+
+## D20. Public search query
+
+`GET /api/listings` takes `q`, `category`, `city`, `minPrice`, `maxPrice`, `currency`, `sort`, `page`,
+`pageSize` (shared `listingSearchQuerySchema`). Empty params (`?city=`) count as unset so plain HTML forms
+work. `category` is an ID and includes the whole subtree, so a parent category shows its children's
+listings. `city` is an exact, case-insensitive match (no fuzzy matching: cities come from a short known
+set). Price bounds are inclusive minor units; "price on request" (`null`) listings drop out when any bound
+is set. Prices in different currencies are not converted: a client that filters by price should also send
+`currency`. Sorts: `relevance` (only with `q`, 400 otherwise), `newest` (default without `q`), `oldest`,
+`price_asc`/`price_desc` (no-price listings last). Repeated params (`?city=a&city=b`) are 400.
+
+## D21. Search results contain only active listings
+
+The public feed shows `active` listings only: sold items stay reachable by direct link (D15) but are not
+offered in search. The category subtree is resolved in SQL with a recursive CTE over `parent_id`, so the
+query needs no round trip for the category tree; an unknown category gives an empty page (200), not 400,
+because a stale link is not a client error. Every sort ends with `id` as a tie-breaker so offset pages
+never overlap or skip rows.
+
+## D22. Full-text search
+
+`listings.search_vector` is a stored generated column — `setweight(to_tsvector('simple', title), 'A') ||
+setweight(to_tsvector('simple', description), 'B')` — with a GIN index, so it can never drift from the
+row and needs no triggers. The `simple` config (lower-casing, no stemming) is used because listings are
+in Ukrainian, Russian and English and PostgreSQL ships no Ukrainian stemmer; instead every query word is a
+prefix match (`вело` finds `велосипед`), and all words must match (AND). The tsquery is built in the
+service from letters/digits only (`\p{L}\p{N}`) and passed as a bind parameter, so user input is never
+tsquery syntax; a `q` with nothing searchable (`!!!`) matches nothing. Relevance is `ts_rank` (title hits
+rank higher), then newest. List queries do not select the vector.
+
+## D23. Search indexes
+
+Public search reads only `active` rows, so its filter indexes are partial (`WHERE status = 'active'`):
+`(category_id, created_at)`, `lower(city)` (matches the case-insensitive filter) and `price`. The service
+writes `status = 'active'` as a SQL literal, not a bind parameter, so the planner can always match the
+partial-index predicate. `listings_category_idx` stays for the foreign key; the seller index became
+`(seller_id, created_at)` for `GET /api/me/listings`. `currency` has too few values to be worth an index.
+Checked with `EXPLAIN` on 50k synthetic rows: GIN for selective text queries, the price/city partial
+indexes for those filters.
+
+## D24. Demo data is a separate seed
+
+`db:seed:demo` (dev only, never run by the container) creates 3 demo sellers (`*@demo.classifieds`,
+password `demo-password`, created through better-auth so sign-in works) and 36 listings across all
+categories, three cities, two currencies, with paused/sold and price-on-request examples and spread-out
+dates. It skips entirely when the demo users exist. The production `db:seed` stays categories-only.

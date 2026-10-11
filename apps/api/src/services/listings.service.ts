@@ -3,13 +3,27 @@ import {
   type ListingPhoto,
   type CreateListingInput,
   type Listing,
+  type ListingSearchQuery,
   type ListingStatus,
   type MyListingsQuery,
   type Paginated,
   type UpdateListingInput,
   canChangeListingStatus,
 } from '@classifieds/shared';
-import { and, count, desc, eq, exists } from 'drizzle-orm';
+import {
+  type SQL,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  getTableColumns,
+  gte,
+  inArray,
+  lte,
+  sql,
+} from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { categories, listingPhotos, listings } from '../db/schema.js';
 import { badRequest, conflict } from '../lib/http-error.js';
@@ -17,7 +31,9 @@ import { listingPhotoPath } from '../lib/uploads.js';
 import { type Executor, isListingId, listingNotFound, lockOwnListing } from './listing-access.js';
 import { photosByListing, removeFiles } from './photos.service.js';
 
-type ListingRow = typeof listings.$inferSelect;
+// The search vector is an internal column: list queries leave it out.
+const { searchVector, ...listingColumns } = getTableColumns(listings);
+type ListingRow = Omit<typeof listings.$inferSelect, 'searchVector'>;
 
 /** Statuses anyone can see; a paused listing is visible only to its seller. */
 const PUBLIC_STATUSES: readonly ListingStatus[] = ['active', 'sold'];
@@ -142,10 +158,90 @@ export async function listOwnListings(
   const where = and(eq(listings.sellerId, sellerId), status ? eq(listings.status, status) : undefined);
   const [rows, [totals]] = await Promise.all([
     db
-      .select()
+      .select(listingColumns)
       .from(listings)
       .where(where)
       .orderBy(desc(listings.createdAt), desc(listings.id))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ total: count() }).from(listings).where(where),
+  ]);
+  const total = totals?.total ?? 0;
+  return { items: await withPhotos(rows), page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
+}
+
+/** A category and all of its descendants, as a subquery (recursive CTE over `parent_id`). */
+function categorySubtree(categoryId: number) {
+  return sql`(
+    WITH RECURSIVE subtree AS (
+      SELECT ${categories.id} AS id FROM ${categories} WHERE ${categories.id} = ${categoryId}
+      UNION ALL
+      SELECT c.id FROM ${categories} c JOIN subtree s ON c.parent_id = s.id
+    )
+    SELECT id FROM subtree
+  )`;
+}
+
+/**
+ * Turns free text into a prefix tsquery: every word must match the start of a word in the listing
+ * (`iph 13` → `iph:* & 13:*`). Only letters and digits are kept, so user input can never be tsquery
+ * syntax. Returns null when nothing searchable is left (e.g. `q=!!!`).
+ */
+export function toPrefixTsquery(q: string): string | null {
+  const words = q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  return words.length > 0 ? words.map((w) => `${w}:*`).join(' & ') : null;
+}
+
+function textQuery(q: string | undefined): SQL | undefined {
+  if (q === undefined) return undefined;
+  const tsquery = toPrefixTsquery(q);
+  // Nothing searchable in `q`: match nothing rather than silently ignoring the search.
+  return tsquery === null ? sql`NULL::tsquery` : sql`to_tsquery('simple', ${tsquery})`;
+}
+
+function searchConditions(query: ListingSearchQuery, text: SQL | undefined): SQL | undefined {
+  const { category, city, minPrice, maxPrice, currency } = query;
+  return and(
+    // A literal (not a bind parameter) so the planner can always use the partial `status = 'active'` indexes.
+    sql`${listings.status} = 'active'`,
+    text !== undefined ? sql`${searchVector} @@ ${text}` : undefined,
+    category !== undefined ? inArray(listings.categoryId, categorySubtree(category)) : undefined,
+    city !== undefined ? sql`lower(${listings.city}) = lower(${city})` : undefined,
+    currency !== undefined ? eq(listings.currency, currency) : undefined,
+    // A null price ("on request") never satisfies a bound, so those listings drop out.
+    minPrice !== undefined ? gte(listings.price, minPrice) : undefined,
+    maxPrice !== undefined ? lte(listings.price, maxPrice) : undefined,
+  );
+}
+
+function searchOrder(query: ListingSearchQuery, text: SQL | undefined): SQL[] {
+  // `id` breaks ties so pages never overlap or skip rows.
+  const newest = [desc(listings.createdAt), desc(listings.id)];
+  switch (query.sort ?? (text !== undefined ? 'relevance' : 'newest')) {
+    case 'relevance':
+      return text !== undefined ? [sql`ts_rank(${searchVector}, ${text}) DESC`, ...newest] : newest;
+    case 'oldest':
+      return [asc(listings.createdAt), asc(listings.id)];
+    case 'price_asc':
+      return [sql`${listings.price} ASC NULLS LAST`, ...newest];
+    case 'price_desc':
+      return [sql`${listings.price} DESC NULLS LAST`, ...newest];
+    default:
+      return newest;
+  }
+}
+
+/** Public search: active listings only, filtered, sorted and paginated. */
+export async function searchListings(query: ListingSearchQuery): Promise<Paginated<Listing>> {
+  const { page, pageSize } = query;
+  const text = textQuery(query.q);
+  const where = searchConditions(query, text);
+  const [rows, [totals]] = await Promise.all([
+    db
+      .select(listingColumns)
+      .from(listings)
+      .where(where)
+      .orderBy(...searchOrder(query, text))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ total: count() }).from(listings).where(where),
