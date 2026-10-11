@@ -54,7 +54,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 5.2 `GET /api/listings` — only active listings, filters, sorting, paginated response with total
 - [x] 5.3 Full-text search via PostgreSQL `tsvector` + GIN index (migration)
 - [x] 5.4 Indexes for filter columns; demo seed with sample users/listings
-- [ ] 5.5 Tests for each filter, combinations, pagination edges
+- [x] 5.5 Tests for each filter, combinations, pagination edges
 - Acceptance: tests green.
 
 ## Stage 6 — Merchant portal (React)
