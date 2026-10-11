@@ -157,4 +157,5 @@ Notes: `notFound()` pages are rendered client-side by Next.js 16 (status 404 is 
 app needs `@classifieds/shared` built (`predev`/`prebuild` do it) — D30; the web Dockerfile (8.1) must
 build shared first and pass `API_URL`/`PUBLIC_API_URL`/`SITE_URL` at runtime.
 Next: Stage 8 — Docker and finishing, step 8.1.
+
 - 2026-10-11 — 8.1a — apps/merchant/Dockerfile (pnpm filtered install + vite build → nginx:1.29-alpine) and docker/default.conf.template (SPA fallback, no-cache index, immutable /assets, /api + /uploads proxied to API_UPSTREAM, 55m bodies); dockerd started in the session with a CA-trusting local node base (D36); image built, merchant e2e 5/5 run against the container on :5173 with the API on the host (nginx logs show the API and photo traffic) → next: 8.1b
