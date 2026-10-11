@@ -330,3 +330,17 @@ dependencies (~320 MB, most of it the node base). Standalone is switched on by `
 which only the Dockerfile sets: with it on, `next start` (local runs, Playwright) warns that it does not
 serve that output. `API_URL`, `PUBLIC_API_URL` and `SITE_URL` stay runtime env (D30), so one image serves
 any environment; the container runs as `node` and listens on `0.0.0.0:3000`.
+
+## D38. Full compose stack and the client IP behind nginx
+
+`docker compose up` runs db → api (healthcheck: `wget /health`) → merchant (:5173) and web (:3000), which
+wait for a healthy API. Ports match the dev servers, so `TRUSTED_ORIGINS`, the e2e configs and the
+README URLs are the same in both setups. Web gets `API_URL=http://api:4000` (container network) and
+`PUBLIC_API_URL=http://localhost:4000` (what the browser can reach), so the API port stays published.
+In production mode better-auth rate-limits auth endpoints per client IP, read from `X-Forwarded-For`
+and trusted only when it holds a single address; without it every client shares one bucket (it logs a
+warning). The merchant nginx is the edge, so it sets `X-Forwarded-For $remote_addr`, overwriting any
+client-sent value: limits are per real client and cannot be dodged by spoofing the header. A request
+sent straight to the API's port carries no header and falls into the shared bucket; a deployment that
+fronts the API with another proxy must set the header the same way. The e2e suites still run against
+the stack, spaced out, since a burst of sign-ups from one machine is rightly limited.

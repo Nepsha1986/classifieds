@@ -34,6 +34,40 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:4000/health || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Merchant portal: the static build behind nginx, which proxies /api and /uploads to the API.
+  merchant:
+    build:
+      context: .
+      dockerfile: apps/merchant/Dockerfile
+    environment:
+      API_UPSTREAM: http://api:4000
+    ports:
+      - '5173:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Public dashboard: Next.js renders on the server via API_URL; browsers load photos from PUBLIC_API_URL.
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      API_URL: http://api:4000
+      PUBLIC_API_URL: http://localhost:4000
+      SITE_URL: http://localhost:3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   db-data:
