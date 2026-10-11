@@ -16,12 +16,25 @@ export function parsePage(value: string | undefined): number {
 
 /** `path?query` with empty values dropped and page 1 left out, so URLs stay short and canonical. */
 export function buildHref(path: string, query: Record<string, string | number | undefined>): string {
+  const qs = canonicalQueryString(query);
+  return qs ? `${path}?${qs}` : path;
+}
+
+export function canonicalQueryString(query: Record<string, string | number | undefined>): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     if (value === undefined || value === '') continue;
     if (key === 'page' && Number(value) === 1) continue;
     params.set(key, String(value));
   }
-  const qs = params.toString();
-  return qs ? `${path}?${qs}` : path;
+  return params.toString();
+}
+
+/** The request's query string as received (order and repeated keys kept). */
+export function rawQueryString(params: RawSearchParams): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) search.append(key, v);
+  }
+  return search.toString();
 }

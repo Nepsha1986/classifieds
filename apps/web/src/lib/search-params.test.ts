@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHref, firstParam, parsePage } from './search-params';
+import { buildHref, firstParam, parsePage, rawQueryString } from './search-params';
 
 describe('firstParam', () => {
   it('reads single and repeated params', () => {
@@ -25,5 +25,12 @@ describe('buildHref', () => {
   it('drops empty values and page 1', () => {
     expect(buildHref('/', { page: 1, q: '' })).toBe('/');
     expect(buildHref('/', { q: 'red bike', page: 2 })).toBe('/?q=red+bike&page=2');
+  });
+});
+
+describe('rawQueryString', () => {
+  it('keeps order, empty values and repeated keys', () => {
+    expect(rawQueryString({ q: 'a b', city: '', tag: ['x', 'y'] })).toBe('q=a+b&city=&tag=x&tag=y');
+    expect(rawQueryString({})).toBe('');
   });
 });

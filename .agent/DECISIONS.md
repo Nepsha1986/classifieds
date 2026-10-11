@@ -264,3 +264,16 @@ import suffixes to `.ts`, so the web app uses the compiled `@classifieds/shared`
 `predev`/`prebuild` scripts; type-checking and Vitest still read the sources (D5). Display helpers
 (`formatPrice`, `formatDate`, `categoryLabels`, `currencyDigits`) moved to `@classifieds/shared` so both
 frontends format money the same way.
+
+## D31. Dashboard search URLs
+
+The search state lives only in the URL of `/`, written by a plain GET form, so every result page is
+server-rendered, shareable and works without JavaScript. The URL is for people, not the API: the
+category is a slug (`?category=cars`) and prices are major units (`?minPrice=1500`); `lib/filters.ts`
+turns it into the API query (category ID, minor units). Bad values are dropped instead of answered with
+an error (a stale link still shows listings), reversed price bounds are swapped, and price bounds
+without a chosen currency are compared in UAH (D20), which the page says. After parsing, the page
+redirects to the canonical URL — fixed key order, no empty fields, no default sort, no page 1, no
+unknown params — so a form submit with empty fields becomes a short URL and each search has one URL.
+Filtered pages get `noindex, follow` and a canonical link; the plain feed and listing pages are what
+search engines should index.

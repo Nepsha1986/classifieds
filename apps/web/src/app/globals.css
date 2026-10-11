@@ -213,3 +213,100 @@ main.container {
 .pagination__gap {
   color: var(--muted);
 }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+input,
+select {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 0;
+}
+
+.button--secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.search-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.search-form__query {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-form__query input {
+  flex: 1;
+}
+
+.search-form__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  align-items: end;
+}
+
+.search-form__filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.search-form__price {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.35rem;
+  grid-column: span 2;
+}
+
+.search-form__price legend {
+  font-size: 0.875rem;
+  color: var(--muted);
+  padding: 0;
+  margin-bottom: 0.25rem;
+}
+
+.search-form__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-form__hint {
+  font-size: 0.8rem;
+  margin: 0.6rem 0 0;
+}
+
+@media (max-width: 480px) {
+  .search-form__price {
+    grid-column: auto;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .search-form__price select {
+    grid-column: span 2;
+  }
+}
