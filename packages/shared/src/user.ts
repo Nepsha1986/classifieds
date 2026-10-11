@@ -9,11 +9,38 @@ const optionalText = (max: number) =>
     .transform((v) => (v === '' ? null : v))
     .nullable();
 
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
+export const USER_NAME_MAX = 100;
+
+const emailField = z.string().trim().toLowerCase().pipe(z.email('Enter a valid email'));
+
+/**
+ * Body of better-auth's `POST /api/auth/sign-up/email`. better-auth enforces the same password limits
+ * (configured from these constants); the schema lets clients validate before sending.
+ */
+export const signUpInputSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(USER_NAME_MAX),
+  email: emailField,
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH, `At least ${PASSWORD_MIN_LENGTH} characters`)
+    .max(PASSWORD_MAX_LENGTH, `At most ${PASSWORD_MAX_LENGTH} characters`),
+});
+export type SignUpInput = z.infer<typeof signUpInputSchema>;
+
+/** Body of better-auth's `POST /api/auth/sign-in/email`. */
+export const signInInputSchema = z.object({
+  email: emailField,
+  password: z.string().min(1, 'Password is required'),
+});
+export type SignInInput = z.infer<typeof signInInputSchema>;
+
 export const PHONE_PATTERN = /^\+?[0-9][0-9 ()-]{5,18}[0-9]$/;
 
 export const updateProfileInputSchema = z
   .strictObject({
-    name: z.string().trim().min(1).max(100),
+    name: z.string().trim().min(1, 'Name is required').max(USER_NAME_MAX),
     phone: optionalText(32).refine((v) => v === null || PHONE_PATTERN.test(v), 'Invalid phone number'),
     city: optionalText(100),
   })

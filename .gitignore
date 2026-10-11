@@ -8,3 +8,5 @@ coverage/
 !.env.example
 uploads/
 .DS_Store
+test-results/
+playwright-report/

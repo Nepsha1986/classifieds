@@ -1,3 +1,4 @@
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@classifieds/shared';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { config } from '../config.js';
@@ -9,7 +10,11 @@ export const auth = betterAuth({
   secret: config.BETTER_AUTH_SECRET,
   trustedOrigins: config.TRUSTED_ORIGINS,
   database: drizzleAdapter(db, { provider: 'pg', schema, usePlural: true }),
-  emailAndPassword: { enabled: true, minPasswordLength: 8 },
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
+  },
   user: {
     additionalFields: {
       // Set through PATCH /api/me, not at sign-up.

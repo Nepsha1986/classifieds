@@ -101,3 +101,31 @@ Migrations 0002 (generated `search_vector` + GIN) and 0003 (partial indexes on a
 36 listings.
 How to check: `pnpm test`; or `db:seed:demo`, run the API, `curl 'localhost:4000/api/listings?q=iphone&city=kyiv'`.
 Next: Stage 6 — Merchant portal (React), step 6.1.
+
+- 2026-10-11 — 6.1 — API: CORS for TRUSTED_ORIGINS with credentials (mounted before better-auth, preflights for API + auth), test/cors.test.ts; shared paginatedSchema(); apps/merchant: Vite 8 + React 19 + React Router 8 (data router) + TanStack Query, `source` condition for shared, dev proxy /api + /uploads → API, env from the root .env (VITE_API_URL), fetch client (cookies, JSON/FormData, responses parsed with shared schemas, ApiError for our and better-auth error shapes), typed endpoints for auth/me/categories/listings/photos, layout + start + 404 pages, Vitest + jsdom + Testing Library; react-hooks ESLint rules for merchant; build ok; proxy curl-verified (demo sign-in → /api/me → /api/me/listings) (shared 35, api 118, merchant 10) → next: 6.2
+- 2026-10-11 — 6.2 — shared signUpInputSchema/signInInputSchema + PASSWORD_MIN/MAX_LENGTH (better-auth config uses them); merchant: react-hook-form + zodResolver with shared schemas, /login and /register (GuestOnly), RequireAuth guard (?next= kept, only same-app paths followed), sign-out in the header, session switch drops other cached data but keeps `me` observed, any 401 resets `me` → guard redirects; form helpers (Field, FormError, applyFieldErrors); fake-API test helper; Playwright set up (apps/merchant/e2e, `pnpm --filter @classifieds/merchant e2e`, starts/reuses API + Vite, PLAYWRIGHT_CHROMIUM_PATH) — e2e auth spec passes against the real API (shared 38, api 118, merchant 20) → next: 6.3
+- 2026-10-11 — 6.3 — My listings page at `/`: status tabs (All/Active/Paused/Sold) and page synced with the URL (unknown status ignored), rows with cover thumb, title, status badge, price (minor units via Intl, whole amounts without decimals, null → "Price on request"), category path, city, date; actions only from LISTING_STATUS_TRANSITIONS (sold → only Delete), confirm before "Mark as sold" and delete, API errors shown, list refetched after mutations, pagination, empty / past-the-end states; queries.ts (query keys, categories cached forever); format.ts; component tests with an in-memory fake API; e2e my-listings spec passes against the real API (shared 38, api 118, merchant 34) → next: 6.4
+- 2026-10-11 — 6.4 — /listings/new and /listings/:id/edit: ListingForm (react-hook-form) validated by a resolver that converts the typed values (price in major units with spaces/comma, select ids) and runs the shared createListingInputSchema, errors mapped to fields; API 400 fieldErrors shown on fields, other errors above the button; category select with leaf categories only, grouped by top-level (form mounts after categories load); currency select; city defaults to the profile city; create → edit page with "published" notice (photos next); edit prefilled, PATCH without attributes (kept), sold → read-only, 404 page; "New listing" in header and list, "Edit" for non-sold rows, titles link to edit; shared listing messages made human-readable; e2e listing-form spec (shared 39, api 118, merchant 50) → next: 6.5
+- 2026-10-11 — 6.5 — PhotosEditor on the edit page: grid in order with the cover marked, "Make cover" / ← / → (full permutation PUT), remove with confirm, "Add photos" (multiple) uploads right after picking; client checks with shared limits (type, 5 MB, 10 per listing; over-limit selection rejected whole) before sending; API errors shown; the listing cache gets the returned photos and the list refetches (covers); sold → photos read-only; component tests + e2e photos spec (real PNGs decoded by the browser via the /uploads proxy, order survives reload, cover in the list) (shared 39, api 118, merchant 60) → next: 6.6
+- 2026-10-11 — 6.6 — /profile: email + member-since, form for name/phone/city validated by the shared updateProfileInputSchema (zodResolver; empty phone/city clear them), API field errors on fields, "Profile saved." status, `me` cache updated so the header name changes at once; "Profile" in the header nav; shared profile name message made readable; component tests + e2e profile spec (incl. profile city as the new-listing default) (shared 39, api 118, merchant 63, e2e 5) → next: stage 6 acceptance
+
+### Stage 6 complete — Merchant portal (React) (2026-10-11)
+
+Verified by the verifier sub-agent: frozen install, lint, typecheck, format:check, tests (shared 39, api 118,
+merchant 63), merchant and full-repo builds, `db:generate` (no schema changes), Playwright e2e (5 specs:
+auth, my-listings statuses, create/edit form, photos, profile) against the real API, a manual Playwright pass
+as the demo seller (list with badges, status tabs matching the API, profile data, unauthenticated
+`/listings/new` → `/login?next=%2Flistings%2Fnew`), and CORS (trusted origin allowed with credentials,
+untrusted origin gets no Allow-Origin). Cross-origin mode (production build with `VITE_API_URL`) was also
+checked with Playwright: every API call goes to :4000 and the session survives a reload.
+What works: `apps/merchant` (Vite + React 19 + React Router + TanStack Query + react-hook-form with shared Zod
+schemas): sign-up / sign-in / sign-out with an auth guard and `?next=`; my listings with status tabs,
+badges, allowed status actions, delete, pagination; create/edit listing form (price in major units, leaf
+category select, sold = read-only); photo upload / reorder / cover / remove; profile page. API: CORS with
+credentials for TRUSTED_ORIGINS.
+How to check: `pnpm --filter @classifieds/api dev` + `pnpm --filter @classifieds/merchant dev`, open
+http://localhost:5173 (demo: olena@demo.classifieds / demo-password after `db:seed:demo`); or
+`PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium pnpm --filter @classifieds/merchant e2e`.
+Notes: the merchant JS bundle is ~500 kB (154 kB gzip), right at Vite's warning limit — route-level code
+splitting is a candidate for 8.3.
+Next: Stage 7 — Public dashboard (Next.js), step 7.1.

@@ -191,3 +191,59 @@ indexes for those filters.
 password `demo-password`, created through better-auth so sign-in works) and 36 listings across all
 categories, three cities, two currencies, with paused/sold and price-on-request examples and spread-out
 dates. It skips entirely when the demo users exist. The production `db:seed` stays categories-only.
+
+## D25. Merchant portal stack and how it reaches the API
+
+Vite + React 19 + React Router (data router, `createBrowserRouter`) + TanStack Query for server state
+(caching, invalidation after mutations, loading/error states) — no global store. The API client is a thin
+`fetch` wrapper: `credentials: 'include'`, JSON or `FormData` bodies, every response parsed with the
+shared Zod schema (contract drift fails loudly), errors as `ApiError(status, message, details)` covering
+both our `{ error, details }` and better-auth's `{ message, code }`. Auth calls go straight to
+better-auth's endpoints, no better-auth client library. By default the app calls the API on its own
+origin and the Vite dev server proxies `/api` and `/uploads` (no CORS, cookies are first-party); with
+`VITE_API_URL` set it calls the API cross-origin, which the API allows via CORS with credentials for
+`TRUSTED_ORIGINS` only. Client 4xx errors are not retried. Vite reads the repo-root `.env`.
+
+## D26. Merchant auth flow
+
+The session lives only in better-auth's httpOnly cookie; the app never sees a token. `GET /api/me` is the
+source of truth: the `['me']` query holds the profile or `null` (401). `RequireAuth` wraps every app route
+and redirects to `/login?next=<path>`; `GuestOnly` sends signed-in users away from `/login`/`/register`.
+`next` is followed only for same-app paths (`/…`, not `//…`), so it cannot become an open redirect. On
+sign-in/up/out every other cached query is removed before the new user is stored, so one user's listings
+never show for the next; `me` itself is overwritten, not removed, because mounted observers would keep
+watching a removed query. Any 401 from any request sets `me` to `null`, which sends the user to sign-in
+when the session expires. Forms use react-hook-form with the shared Zod schemas (`signUpInputSchema`,
+`signInInputSchema`); the password limits are shared constants that also configure better-auth.
+
+## D27. End-to-end checks with Playwright
+
+`apps/merchant/e2e` holds Playwright specs that drive the real app against the real API and database;
+`playwright.config.ts` starts (or reuses) the API and Vite dev servers. They are not part of `pnpm test`
+(they need a migrated database and a browser) and run with `pnpm --filter @classifieds/merchant e2e`.
+In cloud sessions the preinstalled Chromium is used via `PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium`
+(its revision differs from the one Playwright would download). Unit/component tests (Vitest + jsdom +
+Testing Library) mock `fetch` with a small fake API.
+
+## D28. Listing form: shared schema as the only rule set, attributes not edited
+
+Form fields hold text as typed; a custom react-hook-form resolver converts it (price in major units →
+integer minor units using the currency's digits, accepting spaces and a comma; select value → category
+ID) and validates with the shared `createListingInputSchema`, mapping issues back to fields — the client
+keeps no second copy of the listing rules, and the shared schema's messages are written for people. An
+empty price means "price on request". Only leaf categories are offered, grouped by top-level category.
+The edit form sends every core field in the PATCH but never `attributes`, so niche attributes set
+through the API are kept; an attributes editor is left out until a niche needs it (values need types
+per category). After creating a listing the user lands on its edit page, because photos can only be
+attached to an existing listing. Sold listings open read-only.
+
+## D29. Photo editing in the merchant portal
+
+Photos are managed on the listing's edit page, separately from the listing form: each action (upload,
+remove, reorder) is its own API call and takes effect at once, matching the API (photos belong to an
+existing listing; reorder takes the full permutation). Files upload right after they are picked. The
+client checks the shared limits first (JPEG/PNG/WebP by declared type, 5 MB, 10 per listing) and skips
+bad files with a message; a selection that would go over the per-listing limit is rejected as a whole
+so the user picks what to keep. The API stays the authority (it re-checks, including magic bytes).
+Reordering uses "Make cover" and ←/→ buttons rather than drag and drop: keyboard- and test-friendly with
+no extra library.

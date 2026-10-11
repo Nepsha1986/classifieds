@@ -1,6 +1,8 @@
 import { toNodeHandler } from 'better-auth/node';
+import cors from 'cors';
 import express from 'express';
 import { auth } from './auth/auth.js';
+import { config } from './config.js';
 import { LISTING_PHOTOS_DIR, LISTING_PHOTOS_URL } from './lib/uploads.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { categoriesRouter } from './routes/categories.js';
@@ -13,6 +15,19 @@ export function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
+
+  // The frontends run on their own origins (merchant portal, public dashboard) and call the API with
+  // the session cookie, so only the trusted origins get CORS with credentials. Mounted first so the
+  // auth endpoints answer preflights too.
+  app.use(
+    cors({
+      origin: config.TRUSTED_ORIGINS,
+      credentials: true,
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+      allowedHeaders: ['Content-Type'],
+      maxAge: 600,
+    }),
+  );
 
   // better-auth parses its own request bodies, so it must be mounted before express.json().
   // Sign-up / sign-in / sign-out etc. live under /api/auth/*.
