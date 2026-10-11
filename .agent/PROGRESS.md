@@ -129,3 +129,5 @@ http://localhost:5173 (demo: olena@demo.classifieds / demo-password after `db:se
 Notes: the merchant JS bundle is ~500 kB (154 kB gzip), right at Vite's warning limit — route-level code
 splitting is a candidate for 8.3.
 Next: Stage 7 — Public dashboard (Next.js), step 7.1.
+
+- 2026-10-11 — 7.1 — apps/web: Next.js 16 (App Router, Turbopack) + React 19; server components fetch the API (`lib/api.ts` apiGet/apiGetOrNull, responses parsed with shared schemas, 404 → null, `no-store` by default, categories revalidate 300 s); `API_URL` (server → API) and `PUBLIC_API_URL` (browser → API, photo URLs) read per request; root `.env` loaded in next.config; layout with header/footer, `force-dynamic` (SSR on every request), not-found and error pages, plain CSS; shared built before dev/build (Turbopack can't read the `.js`-suffixed TS sources); price/date/category-label formatters moved from merchant to `@classifieds/shared`; ESLint react-hooks for web; Vitest for web; curl: home SSR-renders the category list from the API, unknown path 404, API down → 500 + error page (shared 43, api 118, merchant 59, web 9) → next: 7.2

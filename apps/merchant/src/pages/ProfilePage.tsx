@@ -1,4 +1,5 @@
 import {
+  formatDate,
   updateProfileInputSchema,
   USER_NAME_MAX,
   type Profile,
@@ -11,7 +12,6 @@ import type { z } from 'zod';
 import { meApi } from '../api/endpoints';
 import { ME_QUERY_KEY, useMe } from '../auth';
 import { applyFieldErrors, Field, FormError } from '../components/form';
-import { formatDate } from '../format';
 
 /** The schema's input: every field optional, phone/city `''` means "clear". */
 type ProfileFormValues = z.input<typeof updateProfileInputSchema>;

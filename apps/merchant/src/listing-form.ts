@@ -1,12 +1,12 @@
 import {
   createListingInputSchema,
+  currencyDigits,
   DEFAULT_CURRENCY,
   type Category,
   type CreateListingInput,
   type Listing,
 } from '@classifieds/shared';
 import type { FieldErrors, Resolver } from 'react-hook-form';
-import { currencyDigits } from './format';
 
 /** What the form holds: everything as typed text, converted to API input on submit. */
 export type ListingFormValues = {

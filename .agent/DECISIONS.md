@@ -247,3 +247,20 @@ bad files with a message; a selection that would go over the per-listing limit i
 so the user picks what to keep. The API stays the authority (it re-checks, including magic bytes).
 Reordering uses "Make cover" and ←/→ buttons rather than drag and drop: keyboard- and test-friendly with
 no extra library.
+
+## D30. Public dashboard: server components reading the public API
+
+`apps/web` is Next.js 16 with the App Router. Pages are server components that call the API from the
+Next.js server (`lib/api.ts`), validating every response with the shared schemas; there is no client
+data fetching and no session — the dashboard shows public data only, so no cookies are forwarded. The
+root layout sets `dynamic = 'force-dynamic'`: every page is rendered per request (fresh listings, and
+the API is not reachable during a Docker build). Only the category tree is cached (`revalidate: 300`,
+same as the API's Cache-Control). Two URLs, read at request time so one build serves any environment:
+`API_URL` (server → API, e.g. `http://api:4000` in Docker) and `PUBLIC_API_URL` (browser → API, used to
+turn API-relative photo paths into absolute URLs in the HTML; defaults to `API_URL`). Photos are loaded
+straight from the API (immutable cache, D18) rather than proxied through Next.js.
+Turbopack has no option for custom export conditions and does not map the shared sources' `.js`
+import suffixes to `.ts`, so the web app uses the compiled `@classifieds/shared` (`dist`), built by its
+`predev`/`prebuild` scripts; type-checking and Vitest still read the sources (D5). Display helpers
+(`formatPrice`, `formatDate`, `categoryLabels`, `currencyDigits`) moved to `@classifieds/shared` so both
+frontends format money the same way.

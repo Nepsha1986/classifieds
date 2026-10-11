@@ -1,4 +1,4 @@
-import type { Category } from '@classifieds/shared';
+import type { Category } from './category.js';
 
 /** Digits after the decimal point for a currency (2 for UAH/USD/EUR, 0 for JPY). */
 export function currencyDigits(currency: string): number {
