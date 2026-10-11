@@ -277,3 +277,13 @@ redirects to the canonical URL — fixed key order, no empty fields, no default 
 unknown params — so a form submit with empty fields becomes a short URL and each search has one URL.
 Filtered pages get `noindex, follow` and a canonical link; the plain feed and listing pages are what
 search engines should index.
+
+## D32. Listing page SEO
+
+A listing page carries what a search engine or a link preview needs: `<title>` = listing title, a
+description built from price, city and the start of the text, an absolute canonical URL, Open Graph
+tags with the photos, and schema.org `Product` + `Offer` JSON-LD (price in major units, `InStock` or
+`SoldOut`). Absolute URLs come from `SITE_URL` (`metadataBase`), read per request like the API URLs.
+Sold listings stay reachable and indexable (D15) but are marked sold and hide the call button; paused,
+deleted and malformed IDs all render the 404 page with a real 404 status. JSON-LD is serialized with
+`<` escaped so listing text cannot break out of the script tag.

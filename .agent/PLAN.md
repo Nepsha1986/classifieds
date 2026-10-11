@@ -72,7 +72,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 7.1 Next.js app (App Router), server-side data fetching from the API
 - [x] 7.2 Feed with pagination
 - [x] 7.3 Search and filters synced with the URL
-- [ ] 7.4 Listing page (photos, seller), metadata for SEO
+- [x] 7.4 Listing page (photos, seller), metadata for SEO
 - [ ] 7.5 Seller public profile page
 - Acceptance: build passes; pages render server-side (checked with Playwright).
 

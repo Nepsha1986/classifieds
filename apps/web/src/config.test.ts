@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { publicApiUrl, publicAssetUrl, serverApiUrl } from './config';
+import { publicApiUrl, publicAssetUrl, serverApiUrl, siteUrl } from './config';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -9,6 +9,7 @@ describe('API URLs', () => {
     vi.stubEnv('PUBLIC_API_URL', '');
     expect(serverApiUrl()).toBe('http://localhost:4000');
     expect(publicApiUrl()).toBe('http://localhost:4000');
+    expect(siteUrl()).toBe('http://localhost:3000');
   });
 
   it('use a separate public URL for the browser', () => {
