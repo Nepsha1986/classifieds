@@ -236,3 +236,14 @@ The edit form sends every core field in the PATCH but never `attributes`, so nic
 through the API are kept; an attributes editor is left out until a niche needs it (values need types
 per category). After creating a listing the user lands on its edit page, because photos can only be
 attached to an existing listing. Sold listings open read-only.
+
+## D29. Photo editing in the merchant portal
+
+Photos are managed on the listing's edit page, separately from the listing form: each action (upload,
+remove, reorder) is its own API call and takes effect at once, matching the API (photos belong to an
+existing listing; reorder takes the full permutation). Files upload right after they are picked. The
+client checks the shared limits first (JPEG/PNG/WebP by declared type, 5 MB, 10 per listing) and skips
+bad files with a message; a selection that would go over the per-listing limit is rejected as a whole
+so the user picks what to keep. The API stays the authority (it re-checks, including magic bytes).
+Reordering uses "Make cover" and ←/→ buttons rather than drag and drop: keyboard- and test-friendly with
+no extra library.

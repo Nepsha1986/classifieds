@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { FormError } from '../components/form';
 import { ListingForm } from '../components/ListingForm';
+import { PhotosEditor } from '../components/PhotosEditor';
 import { StatusBadge } from '../components/StatusBadge';
 import { listingToForm } from '../listing-form';
 import { useListing, useUpdateListing } from '../queries';
@@ -53,6 +54,7 @@ export function EditListingPage() {
           navigate('/');
         }}
       />
+      <PhotosEditor listingId={data.id} photos={data.photos} readOnly={sold} />
     </section>
   );
 }
