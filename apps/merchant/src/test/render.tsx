@@ -1,3 +1,4 @@
+import type { Listing } from '@classifieds/shared';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { createMemoryRouter } from 'react-router';
@@ -70,3 +71,55 @@ export const profile = {
 };
 
 export const unauthorized: MockResponse = { status: 401, body: { error: 'Authentication required' } };
+
+export const categoryTree = [
+  {
+    id: 1,
+    parentId: null,
+    slug: 'transport',
+    name: 'Transport',
+    children: [{ id: 2, parentId: 1, slug: 'cars', name: 'Cars', children: [] }],
+  },
+  {
+    id: 4,
+    parentId: null,
+    slug: 'electronics',
+    name: 'Electronics',
+    children: [{ id: 5, parentId: 4, slug: 'phones', name: 'Phones', children: [] }],
+  },
+];
+
+let listingCounter = 0;
+
+/** A listing as the API returns it; IDs are unique per call. */
+export function makeListing(overrides: Partial<Listing> = {}): Listing {
+  listingCounter += 1;
+  const n = String(listingCounter).padStart(12, '0');
+  return {
+    id: `00000000-0000-4000-8000-${n}`,
+    sellerId: profile.id,
+    categoryId: 5,
+    title: `Listing ${listingCounter}`,
+    description: 'A thing for sale',
+    price: 1_000_000,
+    currency: 'UAH',
+    city: 'Kyiv',
+    status: 'active',
+    attributes: {},
+    photos: [],
+    createdAt: '2026-10-05T10:00:00.000Z',
+    updatedAt: '2026-10-05T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function page<T>(items: T[], { page = 1, pageSize = 20, total = items.length } = {}) {
+  return { items, page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
+}
+
+/** Responses every signed-in page needs. */
+export const signedInHandlers = {
+  'GET /api/me': { body: profile },
+  'GET /api/categories': { body: categoryTree },
+  'GET /api/me/listings': { body: page([]) },
+} satisfies Record<string, MockResponse>;

@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { safeNextPath } from './auth';
-import { callsTo, mockApi, profile, renderApp, unauthorized } from './test/render';
+import { callsTo, mockApi, profile, renderApp, signedInHandlers, unauthorized } from './test/render';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -20,6 +20,7 @@ describe('auth guard', () => {
   it('remembers the requested page and returns to it after sign-in', async () => {
     let signedIn = false;
     const fetchMock = mockApi({
+      ...signedInHandlers,
       'GET /api/me': () => (signedIn ? { body: profile } : unauthorized),
       'POST /api/auth/sign-in/email': () => {
         signedIn = true;
@@ -44,9 +45,9 @@ describe('auth guard', () => {
   });
 
   it('sends a signed-in user away from the sign-in page', async () => {
-    mockApi({ 'GET /api/me': { body: profile } });
+    mockApi(signedInHandlers);
     const router = renderApp('/login');
-    expect(await screen.findByRole('heading', { name: 'Merchant portal' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'My listings' })).toBeTruthy();
     expect(router.state.location.pathname).toBe('/');
   });
 
@@ -91,6 +92,7 @@ describe('sign-up page', () => {
   it('creates an account and signs the user in', async () => {
     let signedUp = false;
     const fetchMock = mockApi({
+      ...signedInHandlers,
       'GET /api/me': () => (signedUp ? { body: profile } : unauthorized),
       'POST /api/auth/sign-up/email': () => {
         signedUp = true;
@@ -104,7 +106,7 @@ describe('sign-up page', () => {
     await userEvent.type(screen.getByLabelText('Password'), 'demo-password');
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
-    expect(await screen.findByRole('heading', { name: 'Merchant portal' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'My listings' })).toBeTruthy();
     expect(router.state.location.pathname).toBe('/');
     expect(callsTo(fetchMock, 'POST /api/auth/sign-up/email')[0]!.body).toEqual({
       name: 'Olena Kovalenko',
@@ -140,6 +142,7 @@ describe('sign-out', () => {
   it('ends the session and returns to sign-in', async () => {
     let signedIn = true;
     const fetchMock = mockApi({
+      ...signedInHandlers,
       'GET /api/me': () => (signedIn ? { body: profile } : unauthorized),
       'POST /api/auth/sign-out': () => {
         signedIn = false;

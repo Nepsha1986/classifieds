@@ -1,8 +1,8 @@
 import type { RouteObject } from 'react-router';
 import { GuestOnly, RequireAuth } from './auth';
 import { Layout } from './components/Layout';
-import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { MyListingsPage } from './pages/MyListingsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RegisterPage } from './pages/RegisterPage';
 
@@ -19,7 +19,7 @@ export const routes: RouteObject[] = [
       },
       {
         element: <RequireAuth />,
-        children: [{ index: true, element: <HomePage /> }],
+        children: [{ index: true, element: <MyListingsPage /> }],
       },
       { path: '*', element: <NotFoundPage /> },
     ],
