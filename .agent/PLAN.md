@@ -64,7 +64,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 - [x] 6.3 My listings page with status badges and status actions
 - [x] 6.4 Create/edit listing form (Zod validation from shared), category select
 - [x] 6.5 Photo upload/remove in the edit form
-- [ ] 6.6 Profile page
+- [x] 6.6 Profile page
 - Acceptance: build passes; manual flow works against the API (checked with Playwright).
 
 ## Stage 7 — Public dashboard (Next.js)

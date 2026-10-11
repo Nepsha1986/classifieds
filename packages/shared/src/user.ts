@@ -40,7 +40,7 @@ export const PHONE_PATTERN = /^\+?[0-9][0-9 ()-]{5,18}[0-9]$/;
 
 export const updateProfileInputSchema = z
   .strictObject({
-    name: z.string().trim().min(1).max(USER_NAME_MAX),
+    name: z.string().trim().min(1, 'Name is required').max(USER_NAME_MAX),
     phone: optionalText(32).refine((v) => v === null || PHONE_PATTERN.test(v), 'Invalid phone number'),
     city: optionalText(100),
   })

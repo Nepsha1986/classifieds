@@ -5,6 +5,7 @@ import { EditListingPage } from './pages/EditListingPage';
 import { LoginPage } from './pages/LoginPage';
 import { MyListingsPage } from './pages/MyListingsPage';
 import { NewListingPage } from './pages/NewListingPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RegisterPage } from './pages/RegisterPage';
 
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <MyListingsPage /> },
           { path: 'listings/new', element: <NewListingPage /> },
           { path: 'listings/:id/edit', element: <EditListingPage /> },
+          { path: 'profile', element: <ProfilePage /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },
