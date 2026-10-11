@@ -59,7 +59,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 
 ## Stage 6 — Merchant portal (React)
 
-- [ ] 6.1 Vite + React + TS app, router, API client using shared types, CORS/cookies in the API
+- [x] 6.1 Vite + React + TS app, router, API client using shared types, CORS/cookies in the API
 - [ ] 6.2 Sign-up / sign-in / sign-out pages, auth guard
 - [ ] 6.3 My listings page with status badges and status actions
 - [ ] 6.4 Create/edit listing form (Zod validation from shared), category select

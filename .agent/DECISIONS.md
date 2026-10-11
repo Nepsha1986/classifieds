@@ -191,3 +191,15 @@ indexes for those filters.
 password `demo-password`, created through better-auth so sign-in works) and 36 listings across all
 categories, three cities, two currencies, with paused/sold and price-on-request examples and spread-out
 dates. It skips entirely when the demo users exist. The production `db:seed` stays categories-only.
+
+## D25. Merchant portal stack and how it reaches the API
+
+Vite + React 19 + React Router (data router, `createBrowserRouter`) + TanStack Query for server state
+(caching, invalidation after mutations, loading/error states) — no global store. The API client is a thin
+`fetch` wrapper: `credentials: 'include'`, JSON or `FormData` bodies, every response parsed with the
+shared Zod schema (contract drift fails loudly), errors as `ApiError(status, message, details)` covering
+both our `{ error, details }` and better-auth's `{ message, code }`. Auth calls go straight to
+better-auth's endpoints, no better-auth client library. By default the app calls the API on its own
+origin and the Vite dev server proxies `/api` and `/uploads` (no CORS, cookies are first-party); with
+`VITE_API_URL` set it calls the API cross-origin, which the API allows via CORS with credentials for
+`TRUSTED_ORIGINS` only. Client 4xx errors are not retried. Vite reads the repo-root `.env`.

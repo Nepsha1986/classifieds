@@ -101,3 +101,5 @@ Migrations 0002 (generated `search_vector` + GIN) and 0003 (partial indexes on a
 36 listings.
 How to check: `pnpm test`; or `db:seed:demo`, run the API, `curl 'localhost:4000/api/listings?q=iphone&city=kyiv'`.
 Next: Stage 6 — Merchant portal (React), step 6.1.
+
+- 2026-10-11 — 6.1 — API: CORS for TRUSTED_ORIGINS with credentials (mounted before better-auth, preflights for API + auth), test/cors.test.ts; shared paginatedSchema(); apps/merchant: Vite 8 + React 19 + React Router 8 (data router) + TanStack Query, `source` condition for shared, dev proxy /api + /uploads → API, env from the root .env (VITE_API_URL), fetch client (cookies, JSON/FormData, responses parsed with shared schemas, ApiError for our and better-auth error shapes), typed endpoints for auth/me/categories/listings/photos, layout + start + 404 pages, Vitest + jsdom + Testing Library; react-hooks ESLint rules for merchant; build ok; proxy curl-verified (demo sign-in → /api/me → /api/me/listings) (shared 35, api 118, merchant 10) → next: 6.2

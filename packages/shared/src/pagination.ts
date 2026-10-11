@@ -17,3 +17,14 @@ export type Paginated<T> = {
   total: number;
   totalPages: number;
 };
+
+/** Runtime schema for a `Paginated<T>` response, e.g. to validate API responses in a client. */
+export function paginatedSchema<T extends z.ZodType>(item: T) {
+  return z.object({
+    items: z.array(item),
+    page: z.number().int().min(1),
+    pageSize: z.number().int().min(1),
+    total: z.number().int().min(0),
+    totalPages: z.number().int().min(0),
+  });
+}
