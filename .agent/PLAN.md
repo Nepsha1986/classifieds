@@ -80,7 +80,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
 
 - [~] 8.1 Dockerfiles for merchant and web; full `docker-compose.yml`
   - [x] 8.1a Merchant image: Vite build served by nginx, `/api` + `/uploads` proxied to the API
-  - [ ] 8.1b Web image: Next.js standalone output, runtime env
+  - [x] 8.1b Web image: Next.js standalone output, runtime env
   - [ ] 8.1c Compose: merchant + web services, API healthcheck; full stack started and checked
 - [ ] 8.2 README: setup, running, architecture, API overview
 - [ ] 8.3 Final pass: lint, tests, builds, fix leftovers

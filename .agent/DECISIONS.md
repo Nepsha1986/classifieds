@@ -320,3 +320,13 @@ there goes through an intercepting proxy with its own CA, so `pnpm install` insi
 with SELF_SIGNED_CERT_IN_CHAIN. Fallback (session only, never committed): build a local
 `node:22-alpine` tag that adds `/root/.ccr/ca-bundle.crt` and sets `NODE_EXTRA_CA_CERTS`; the repo
 Dockerfiles stay unchanged. PostgreSQL for tests is still the local cluster (D3).
+
+## D37. Web image: Next.js standalone output
+
+The web image runs Next.js's standalone server (`node apps/web/server.js`): the build traces only the
+files the server needs (from the repo root, `outputFileTracingRoot`), and Turbopack bundles
+`@classifieds/shared` and zod into the server chunks, so the runtime stage holds no pnpm store or dev
+dependencies (~320 MB, most of it the node base). Standalone is switched on by `NEXT_OUTPUT=standalone`,
+which only the Dockerfile sets: with it on, `next start` (local runs, Playwright) warns that it does not
+serve that output. `API_URL`, `PUBLIC_API_URL` and `SITE_URL` stay runtime env (D30), so one image serves
+any environment; the container runs as `node` and listens on `0.0.0.0:3000`.
