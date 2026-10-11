@@ -303,3 +303,63 @@ in a blank 16.3.8 and 16.4.0 app) a page that calls `notFound()` answers with th
 an error-shell HTML, and the not-found UI renders in the browser. Unknown URLs (no route) are fully
 server-rendered. A 404 page carries no content worth indexing, so this is accepted: the no-JS checks
 assert the 404 status, a JS-enabled check asserts the not-found UI.
+
+## D35. Merchant image: static build behind nginx, which also proxies the API
+
+The merchant portal is a static SPA, so its image is `nginx:alpine` serving the Vite build; no Node.js at
+runtime. nginx also proxies `/api` and `/uploads` to the API (`API_UPSTREAM`, default `http://api:4000`,
+substituted at start by the image's envsubst templates), keeping the dev setup's same-origin model
+(D25): no CORS, first-party session cookie. `VITE_API_URL` stays a build arg for a cross-origin
+deployment. `index.html` is served `no-cache` and every unknown path falls back to it (client routes);
+hashed `/assets/` are cached as immutable. `client_max_body_size 55m` fits one upload of 10 × 5 MB photos.
+
+## D36. Docker in cloud sessions
+
+D3 assumed no Docker daemon; `dockerd` can in fact be started in the session (`dockerd &`). Outbound TLS
+there goes through an intercepting proxy with its own CA, so `pnpm install` inside `docker build` fails
+with SELF_SIGNED_CERT_IN_CHAIN. Fallback (session only, never committed): build a local
+`node:22-alpine` tag that adds `/root/.ccr/ca-bundle.crt` and sets `NODE_EXTRA_CA_CERTS`; the repo
+Dockerfiles stay unchanged. PostgreSQL for tests is still the local cluster (D3).
+
+## D37. Web image: Next.js standalone output
+
+The web image runs Next.js's standalone server (`node apps/web/server.js`): the build traces only the
+files the server needs (from the repo root, `outputFileTracingRoot`), and Turbopack bundles
+`@classifieds/shared` and zod into the server chunks, so the runtime stage holds no pnpm store or dev
+dependencies (~320 MB, most of it the node base). Standalone is switched on by `NEXT_OUTPUT=standalone`,
+which only the Dockerfile sets: with it on, `next start` (local runs, Playwright) warns that it does not
+serve that output. `API_URL`, `PUBLIC_API_URL` and `SITE_URL` stay runtime env (D30), so one image serves
+any environment; the container runs as `node` and listens on `0.0.0.0:3000`.
+
+## D38. Full compose stack and the client IP behind nginx
+
+`docker compose up` runs db → api (healthcheck: `wget /health`) → merchant (:5173) and web (:3000), which
+wait for a healthy API. Ports match the dev servers, so `TRUSTED_ORIGINS`, the e2e configs and the
+README URLs are the same in both setups. Web gets `API_URL=http://api:4000` (container network) and
+`PUBLIC_API_URL=http://localhost:4000` (what the browser can reach), so the API port stays published.
+In production mode better-auth rate-limits auth endpoints per client IP, read from `X-Forwarded-For`
+and trusted only when it holds a single address; without it every client shares one bucket (it logs a
+warning). The merchant nginx is the edge, so it sets `X-Forwarded-For $remote_addr`, overwriting any
+client-sent value: limits are per real client and cannot be dodged by spoofing the header. A request
+sent straight to the API's port carries no header and falls into the shared bucket; a deployment that
+fronts the API with another proxy must set the header the same way. The e2e suites still run against
+the stack, spaced out, since a burst of sign-ups from one machine is rightly limited.
+
+## D39. Unused better-auth peers are stripped (`.pnpmfile.cjs`)
+
+better-auth lists optional peers for every framework it supports, and pnpm resolves an optional peer
+whenever the workspace contains it. So the API's better-auth was bound to Next.js and React (from
+apps/web) and to vitest and drizzle-kit, and `pnpm deploy --prod` copied all of them into the API image
+(669 MB of node_modules, plus a moderate esbuild advisory via drizzle-kit's old loader). The API imports
+only `better-auth`, `better-auth/node` and the Drizzle adapter, so a `readPackage` hook removes the
+next/react/react-dom/vitest/drizzle-kit peers; drizzle-orm and pg stay. Result: 53 MB of node_modules
+in the image and a clean `pnpm audit --prod`. The lockfile records the hook's checksum, so every
+Dockerfile copies `.pnpmfile.cjs` before `pnpm install --frozen-lockfile`. If a better-auth
+integration with one of those packages is ever used, take it off the list.
+
+## D40. Merchant bundle is not split
+
+The merchant bundle is ~500 kB (155 kB gzip). Almost all of it is libraries every page needs (React,
+React Router, TanStack Query, react-hook-form, zod with the shared schemas), so route-level code
+splitting would move little out of the first load while adding loading states to every navigation.
+The portal sits behind sign-in and its hashed assets are cached as immutable (D35); left as one bundle.

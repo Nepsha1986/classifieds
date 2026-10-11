@@ -12,6 +12,10 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const nextConfig: NextConfig = {
   // Lets Turbopack follow the workspace link to @classifieds/shared.
   turbopack: { root: repoRoot },
+  // Self-contained server bundle (`.next/standalone`) for the Docker image, which sets NEXT_OUTPUT;
+  // local builds keep the regular output that `next start` serves.
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
+  outputFileTracingRoot: repoRoot,
   poweredByHeader: false,
 };
 

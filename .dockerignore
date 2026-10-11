@@ -8,3 +8,5 @@
 .env.*
 .agent
 .claude
+**/test-results
+**/playwright-report
