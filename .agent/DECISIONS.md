@@ -294,3 +294,12 @@ The seller page lists the seller's listings through `GET /api/listings?seller=<i
 endpoint: it is the same public query (active only, sorting, pagination, the response schema) with one
 more condition, served by the `(seller_id, created_at)` index. Sold and paused listings are not shown on
 the profile, matching the feed (D21). `seller` must be a UUID (400 otherwise, like other malformed params).
+
+## D34. SSR checks run with JavaScript disabled; `notFound()` pages are the exception
+
+`apps/web/e2e` drives the production build with `javaScriptEnabled: false`, so a passing check proves
+the content is in the server's HTML. One exception is a framework behavior: in Next.js 16 (reproduced
+in a blank 16.3.8 and 16.4.0 app) a page that calls `notFound()` answers with the correct 404 status but
+an error-shell HTML, and the not-found UI renders in the browser. Unknown URLs (no route) are fully
+server-rendered. A 404 page carries no content worth indexing, so this is accepted: the no-JS checks
+assert the 404 status, a JS-enabled check asserts the not-found UI.
