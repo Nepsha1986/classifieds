@@ -3,6 +3,7 @@ import {
   canChangeListingStatus,
   changeListingStatusInputSchema,
   createListingInputSchema,
+  listingSearchQuerySchema,
   updateListingInputSchema,
 } from './listing.js';
 
@@ -74,5 +75,66 @@ describe('listing status', () => {
     expect(canChangeListingStatus('sold', 'active')).toBe(false);
     expect(canChangeListingStatus('sold', 'paused')).toBe(false);
     expect(canChangeListingStatus('sold', 'sold')).toBe(true);
+  });
+});
+
+describe('listingSearchQuerySchema', () => {
+  it('applies pagination defaults and leaves filters unset', () => {
+    expect(listingSearchQuerySchema.parse({})).toEqual({ page: 1, pageSize: 20 });
+  });
+
+  it('coerces and normalizes query-string values', () => {
+    expect(
+      listingSearchQuerySchema.parse({
+        q: '  iphone 13 ',
+        category: '3',
+        city: ' Kyiv ',
+        minPrice: '1000',
+        maxPrice: '5000',
+        currency: 'usd',
+        sort: 'price_asc',
+        page: '2',
+        pageSize: '10',
+      }),
+    ).toEqual({
+      q: 'iphone 13',
+      category: 3,
+      city: 'Kyiv',
+      minPrice: 1000,
+      maxPrice: 5000,
+      currency: 'USD',
+      sort: 'price_asc',
+      page: 2,
+      pageSize: 10,
+    });
+  });
+
+  it('treats empty and blank params as unset', () => {
+    expect(
+      listingSearchQuerySchema.parse({ q: '  ', category: '', city: '', minPrice: '', sort: '' }),
+    ).toEqual({ page: 1, pageSize: 20 });
+  });
+
+  it('accepts equal price bounds and relevance with a query', () => {
+    expect(listingSearchQuerySchema.safeParse({ minPrice: '5', maxPrice: '5' }).success).toBe(true);
+    expect(listingSearchQuerySchema.safeParse({ q: 'bike', sort: 'relevance' }).success).toBe(true);
+  });
+
+  it('rejects invalid values', () => {
+    const bad = [
+      { category: 'cars' },
+      { category: '0' },
+      { minPrice: '-1' },
+      { maxPrice: '1.5' },
+      { minPrice: '10', maxPrice: '5' },
+      { currency: 'hryvnia' },
+      { sort: 'cheapest' },
+      { sort: 'relevance' },
+      { q: 'x'.repeat(201) },
+      { city: ['Kyiv', 'Lviv'] },
+      { page: '0' },
+    ];
+    for (const input of bad)
+      expect(listingSearchQuerySchema.safeParse(input).success, JSON.stringify(input)).toBe(false);
   });
 });

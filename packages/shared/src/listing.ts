@@ -101,3 +101,49 @@ export const myListingsQuerySchema = paginationQuerySchema.extend({
   status: listingStatusSchema.optional(),
 });
 export type MyListingsQuery = z.infer<typeof myListingsQuerySchema>;
+
+export const LISTING_SORTS = ['relevance', 'newest', 'oldest', 'price_asc', 'price_desc'] as const;
+export const listingSortSchema = z.enum(LISTING_SORTS);
+export type ListingSort = z.infer<typeof listingSortSchema>;
+
+export const LISTING_SEARCH_QUERY_MAX = 200;
+
+/** HTML forms send empty fields as `?city=`; treat those as "not set". */
+const optionalParam = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), schema.optional());
+
+/**
+ * `GET /api/listings`: public search over active listings. Values arrive as query-string strings.
+ * - `q` — full-text search over title and description;
+ * - `category` — category ID; a parent category includes all of its descendants;
+ * - `city` — exact match, case-insensitive;
+ * - `minPrice` / `maxPrice` — inclusive bounds in minor units; listings without a price are excluded
+ *   when either bound is set;
+ * - `currency` — restricts to one currency (price bounds are compared within it);
+ * - `sort` — defaults to `relevance` when `q` is set, otherwise `newest`.
+ */
+export const listingSearchQuerySchema = paginationQuerySchema
+  .extend({
+    q: optionalParam(z.string().trim().max(LISTING_SEARCH_QUERY_MAX)),
+    category: optionalParam(z.coerce.number().int().positive()),
+    city: optionalParam(z.string().trim().max(100)),
+    minPrice: optionalParam(z.coerce.number().int().min(0)),
+    maxPrice: optionalParam(z.coerce.number().int().min(0)),
+    currency: optionalParam(
+      z
+        .string()
+        .trim()
+        .toUpperCase()
+        .regex(/^[A-Z]{3}$/, 'Currency must be a 3-letter ISO code'),
+    ),
+    sort: optionalParam(listingSortSchema),
+  })
+  .refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
+    message: 'minPrice must not exceed maxPrice',
+    path: ['minPrice'],
+  })
+  .refine((v) => v.sort !== 'relevance' || v.q !== undefined, {
+    message: 'Sorting by relevance requires a search query',
+    path: ['sort'],
+  });
+export type ListingSearchQuery = z.infer<typeof listingSearchQuerySchema>;

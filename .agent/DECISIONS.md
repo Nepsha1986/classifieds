@@ -144,3 +144,14 @@ such as deleting a user, an aborted temp upload) is handled by `sweepUploads()` 
 removes temp files and photo files without a `listing_photos` row, but only when older than 1 hour so an
 upload in flight is never touched. better-auth user deletion is not enabled, so no API path cascades
 photos without going through the service.
+
+## D20. Public search query
+
+`GET /api/listings` takes `q`, `category`, `city`, `minPrice`, `maxPrice`, `currency`, `sort`, `page`,
+`pageSize` (shared `listingSearchQuerySchema`). Empty params (`?city=`) count as unset so plain HTML forms
+work. `category` is an ID and includes the whole subtree, so a parent category shows its children's
+listings. `city` is an exact, case-insensitive match (no fuzzy matching: cities come from a short known
+set). Price bounds are inclusive minor units; "price on request" (`null`) listings drop out when any bound
+is set. Prices in different currencies are not converted: a client that filters by price should also send
+`currency`. Sorts: `relevance` (only with `q`, 400 otherwise), `newest` (default without `q`), `oldest`,
+`price_asc`/`price_desc` (no-price listings last). Repeated params (`?city=a&city=b`) are 400.

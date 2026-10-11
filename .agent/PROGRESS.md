@@ -79,3 +79,4 @@ on photo/listing delete; a startup sweep removes stale temp and orphaned photo f
 How to check: `pnpm test`; or run the API, sign up with a cookie jar (`Origin: http://localhost:5173`),
 create a listing, `curl -b jar -F photos=@a.png localhost:4000/api/listings/<id>/photos`, then GET the `url`.
 Next: Stage 5 — Search, filters, pagination (step 5.1).
+- 2026-10-11 — 5.1 — shared listingSearchQuerySchema (q, category subtree id, city, min/maxPrice, currency, sort incl. relevance-only-with-q, pagination; blank params = unset; min ≤ max), LISTING_SORTS; unit tests (shared 33) → next: 5.2
