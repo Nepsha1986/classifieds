@@ -144,9 +144,20 @@ export const listings = pgTable(
   },
   (t) => [
     index('listings_search_idx').using('gin', t.searchVector),
-    index('listings_seller_idx').on(t.sellerId),
+    // The seller's own listings, newest first (`GET /api/me/listings`).
+    index('listings_seller_created_idx').on(t.sellerId, t.createdAt),
     index('listings_category_idx').on(t.categoryId),
     index('listings_status_created_idx').on(t.status, t.createdAt),
+    // Public search covers active listings only, so its filter indexes are partial.
+    index('listings_active_category_created_idx')
+      .on(t.categoryId, t.createdAt)
+      .where(sql`${t.status} = 'active'`),
+    index('listings_active_city_idx')
+      .on(sql`lower(${t.city})`)
+      .where(sql`${t.status} = 'active'`),
+    index('listings_active_price_idx')
+      .on(t.price)
+      .where(sql`${t.status} = 'active'`),
     check('listings_price_non_negative', sql`${t.price} IS NULL OR ${t.price} >= 0`),
   ],
 );

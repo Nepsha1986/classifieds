@@ -202,7 +202,8 @@ function textQuery(q: string | undefined): SQL | undefined {
 function searchConditions(query: ListingSearchQuery, text: SQL | undefined): SQL | undefined {
   const { category, city, minPrice, maxPrice, currency } = query;
   return and(
-    eq(listings.status, 'active'),
+    // A literal (not a bind parameter) so the planner can always use the partial `status = 'active'` indexes.
+    sql`${listings.status} = 'active'`,
     text !== undefined ? sql`${searchVector} @@ ${text}` : undefined,
     category !== undefined ? inArray(listings.categoryId, categorySubtree(category)) : undefined,
     city !== undefined ? sql`lower(${listings.city}) = lower(${city})` : undefined,

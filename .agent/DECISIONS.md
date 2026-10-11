@@ -174,3 +174,20 @@ prefix match (`вело` finds `велосипед`), and all words must match (
 service from letters/digits only (`\p{L}\p{N}`) and passed as a bind parameter, so user input is never
 tsquery syntax; a `q` with nothing searchable (`!!!`) matches nothing. Relevance is `ts_rank` (title hits
 rank higher), then newest. List queries do not select the vector.
+
+## D23. Search indexes
+
+Public search reads only `active` rows, so its filter indexes are partial (`WHERE status = 'active'`):
+`(category_id, created_at)`, `lower(city)` (matches the case-insensitive filter) and `price`. The service
+writes `status = 'active'` as a SQL literal, not a bind parameter, so the planner can always match the
+partial-index predicate. `listings_category_idx` stays for the foreign key; the seller index became
+`(seller_id, created_at)` for `GET /api/me/listings`. `currency` has too few values to be worth an index.
+Checked with `EXPLAIN` on 50k synthetic rows: GIN for selective text queries, the price/city partial
+indexes for those filters.
+
+## D24. Demo data is a separate seed
+
+`db:seed:demo` (dev only, never run by the container) creates 3 demo sellers (`*@demo.classifieds`,
+password `demo-password`, created through better-auth so sign-in works) and 36 listings across all
+categories, three cities, two currencies, with paused/sold and price-on-request examples and spread-out
+dates. It skips entirely when the demo users exist. The production `db:seed` stays categories-only.
