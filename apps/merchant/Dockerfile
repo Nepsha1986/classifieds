@@ -2,7 +2,7 @@
 FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /repo
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/merchant/package.json apps/merchant/
 RUN pnpm install --frozen-lockfile --filter @classifieds/merchant...

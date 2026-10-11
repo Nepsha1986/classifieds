@@ -344,3 +344,22 @@ client-sent value: limits are per real client and cannot be dodged by spoofing t
 sent straight to the API's port carries no header and falls into the shared bucket; a deployment that
 fronts the API with another proxy must set the header the same way. The e2e suites still run against
 the stack, spaced out, since a burst of sign-ups from one machine is rightly limited.
+
+## D39. Unused better-auth peers are stripped (`.pnpmfile.cjs`)
+
+better-auth lists optional peers for every framework it supports, and pnpm resolves an optional peer
+whenever the workspace contains it. So the API's better-auth was bound to Next.js and React (from
+apps/web) and to vitest and drizzle-kit, and `pnpm deploy --prod` copied all of them into the API image
+(669 MB of node_modules, plus a moderate esbuild advisory via drizzle-kit's old loader). The API imports
+only `better-auth`, `better-auth/node` and the Drizzle adapter, so a `readPackage` hook removes the
+next/react/react-dom/vitest/drizzle-kit peers; drizzle-orm and pg stay. Result: 53 MB of node_modules
+in the image and a clean `pnpm audit --prod`. The lockfile records the hook's checksum, so every
+Dockerfile copies `.pnpmfile.cjs` before `pnpm install --frozen-lockfile`. If a better-auth
+integration with one of those packages is ever used, take it off the list.
+
+## D40. Merchant bundle is not split
+
+The merchant bundle is ~500 kB (155 kB gzip). Almost all of it is libraries every page needs (React,
+React Router, TanStack Query, react-hook-form, zod with the shared schemas), so route-level code
+splitting would move little out of the first load while adding loading states to every navigation.
+The portal sits behind sign-in and its hashed assets are cached as immutable (D35); left as one bundle.

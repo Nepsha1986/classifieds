@@ -4,7 +4,7 @@ RUN corepack enable
 WORKDIR /repo
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_OUTPUT=standalone
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile --filter @classifieds/web...

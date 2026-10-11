@@ -26,6 +26,8 @@ project memory in `.agent/` (PLAN, PROGRESS, DECISIONS), finishes one stage, com
 - PostgreSQL: `docker compose up -d db`. When Docker isn't available (e.g. cloud sessions), use a local
   cluster: `service postgresql start`, a `classifieds` superuser with password `classifieds`, and the
   databases `classifieds` and `classifieds_test`.
+- Cloud sessions can start `dockerd` for image builds; TLS inside builds needs the session CA in a local
+  base image (see `.agent/DECISIONS.md` D36). Docker Hub may rate-limit pulls: reuse local images.
 - Copy `.env.example` to `.env` (API reads `apps/api/.env` or the root `.env`).
 
 ## Conventions

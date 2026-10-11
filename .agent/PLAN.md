@@ -83,5 +83,5 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. One `work` run = one stag
   - [x] 8.1b Web image: Next.js standalone output, runtime env
   - [x] 8.1c Compose: merchant + web services, API healthcheck; full stack started and checked
 - [x] 8.2 README: setup, running, architecture, API overview
-- [ ] 8.3 Final pass: lint, tests, builds, fix leftovers
+- [~] 8.3 Final pass: lint, tests, builds, fix leftovers
 - Acceptance: all checks green; README instructions reproduce a running stack.
