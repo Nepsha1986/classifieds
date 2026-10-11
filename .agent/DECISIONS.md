@@ -247,3 +247,59 @@ bad files with a message; a selection that would go over the per-listing limit i
 so the user picks what to keep. The API stays the authority (it re-checks, including magic bytes).
 Reordering uses "Make cover" and ←/→ buttons rather than drag and drop: keyboard- and test-friendly with
 no extra library.
+
+## D30. Public dashboard: server components reading the public API
+
+`apps/web` is Next.js 16 with the App Router. Pages are server components that call the API from the
+Next.js server (`lib/api.ts`), validating every response with the shared schemas; there is no client
+data fetching and no session — the dashboard shows public data only, so no cookies are forwarded. The
+root layout sets `dynamic = 'force-dynamic'`: every page is rendered per request (fresh listings, and
+the API is not reachable during a Docker build). Only the category tree is cached (`revalidate: 300`,
+same as the API's Cache-Control). Two URLs, read at request time so one build serves any environment:
+`API_URL` (server → API, e.g. `http://api:4000` in Docker) and `PUBLIC_API_URL` (browser → API, used to
+turn API-relative photo paths into absolute URLs in the HTML; defaults to `API_URL`). Photos are loaded
+straight from the API (immutable cache, D18) rather than proxied through Next.js.
+Turbopack has no option for custom export conditions and does not map the shared sources' `.js`
+import suffixes to `.ts`, so the web app uses the compiled `@classifieds/shared` (`dist`), built by its
+`predev`/`prebuild` scripts; type-checking and Vitest still read the sources (D5). Display helpers
+(`formatPrice`, `formatDate`, `categoryLabels`, `currencyDigits`) moved to `@classifieds/shared` so both
+frontends format money the same way.
+
+## D31. Dashboard search URLs
+
+The search state lives only in the URL of `/`, written by a plain GET form, so every result page is
+server-rendered, shareable and works without JavaScript. The URL is for people, not the API: the
+category is a slug (`?category=cars`) and prices are major units (`?minPrice=1500`); `lib/filters.ts`
+turns it into the API query (category ID, minor units). Bad values are dropped instead of answered with
+an error (a stale link still shows listings), reversed price bounds are swapped, and price bounds
+without a chosen currency are compared in UAH (D20), which the page says. After parsing, the page
+redirects to the canonical URL — fixed key order, no empty fields, no default sort, no page 1, no
+unknown params — so a form submit with empty fields becomes a short URL and each search has one URL.
+Filtered pages get `noindex, follow` and a canonical link; the plain feed and listing pages are what
+search engines should index.
+
+## D32. Listing page SEO
+
+A listing page carries what a search engine or a link preview needs: `<title>` = listing title, a
+description built from price, city and the start of the text, an absolute canonical URL, Open Graph
+tags with the photos, and schema.org `Product` + `Offer` JSON-LD (price in major units, `InStock` or
+`SoldOut`). Absolute URLs come from `SITE_URL` (`metadataBase`), read per request like the API URLs.
+Sold listings stay reachable and indexable (D15) but are marked sold and hide the call button; paused,
+deleted and malformed IDs all render the 404 page with a real 404 status. JSON-LD is serialized with
+`<` escaped so listing text cannot break out of the script tag.
+
+## D33. Seller profile listings come from the public search
+
+The seller page lists the seller's listings through `GET /api/listings?seller=<id>` instead of a new
+endpoint: it is the same public query (active only, sorting, pagination, the response schema) with one
+more condition, served by the `(seller_id, created_at)` index. Sold and paused listings are not shown on
+the profile, matching the feed (D21). `seller` must be a UUID (400 otherwise, like other malformed params).
+
+## D34. SSR checks run with JavaScript disabled; `notFound()` pages are the exception
+
+`apps/web/e2e` drives the production build with `javaScriptEnabled: false`, so a passing check proves
+the content is in the server's HTML. One exception is a framework behavior: in Next.js 16 (reproduced
+in a blank 16.3.8 and 16.4.0 app) a page that calls `notFound()` answers with the correct 404 status but
+an error-shell HTML, and the not-found UI renders in the browser. Unknown URLs (no route) are fully
+server-rendered. A 404 page carries no content worth indexing, so this is accepted: the no-JS checks
+assert the 404 status, a JS-enabled check asserts the not-found UI.

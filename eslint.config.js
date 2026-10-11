@@ -6,7 +6,14 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/coverage/**', '**/drizzle/meta/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.next/**',
+      '**/coverage/**',
+      '**/drizzle/meta/**',
+      '**/next-env.d.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -22,7 +29,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/merchant/src/**/*.{ts,tsx}'],
+    files: ['apps/merchant/src/**/*.{ts,tsx}', 'apps/web/src/**/*.{ts,tsx}'],
     ...reactHooks.configs.flat.recommended,
     languageOptions: { globals: { ...globals.browser } },
   },

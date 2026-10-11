@@ -83,6 +83,13 @@ describe('listingSearchQuerySchema', () => {
     expect(listingSearchQuerySchema.parse({})).toEqual({ page: 1, pageSize: 20 });
   });
 
+  it('accepts a seller ID and rejects anything else', () => {
+    const seller = '6f1c6c55-0d3c-4b8e-9a39-2f3f3b1f5c11';
+    expect(listingSearchQuerySchema.parse({ seller })).toMatchObject({ seller });
+    expect(listingSearchQuerySchema.parse({ seller: '' }).seller).toBeUndefined();
+    expect(listingSearchQuerySchema.safeParse({ seller: 'bob' }).success).toBe(false);
+  });
+
   it('coerces and normalizes query-string values', () => {
     expect(
       listingSearchQuerySchema.parse({

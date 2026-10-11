@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryLabels, currencyDigits, formatPrice } from './format';
+import { categoryLabels, currencyDigits, formatPrice } from './format.js';
 
 describe('formatPrice', () => {
   it('formats minor units in the listing currency', () => {
