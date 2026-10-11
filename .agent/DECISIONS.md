@@ -303,3 +303,20 @@ in a blank 16.3.8 and 16.4.0 app) a page that calls `notFound()` answers with th
 an error-shell HTML, and the not-found UI renders in the browser. Unknown URLs (no route) are fully
 server-rendered. A 404 page carries no content worth indexing, so this is accepted: the no-JS checks
 assert the 404 status, a JS-enabled check asserts the not-found UI.
+
+## D35. Merchant image: static build behind nginx, which also proxies the API
+
+The merchant portal is a static SPA, so its image is `nginx:alpine` serving the Vite build; no Node.js at
+runtime. nginx also proxies `/api` and `/uploads` to the API (`API_UPSTREAM`, default `http://api:4000`,
+substituted at start by the image's envsubst templates), keeping the dev setup's same-origin model
+(D25): no CORS, first-party session cookie. `VITE_API_URL` stays a build arg for a cross-origin
+deployment. `index.html` is served `no-cache` and every unknown path falls back to it (client routes);
+hashed `/assets/` are cached as immutable. `client_max_body_size 55m` fits one upload of 10 × 5 MB photos.
+
+## D36. Docker in cloud sessions
+
+D3 assumed no Docker daemon; `dockerd` can in fact be started in the session (`dockerd &`). Outbound TLS
+there goes through an intercepting proxy with its own CA, so `pnpm install` inside `docker build` fails
+with SELF_SIGNED_CERT_IN_CHAIN. Fallback (session only, never committed): build a local
+`node:22-alpine` tag that adds `/root/.ccr/ca-bundle.crt` and sets `NODE_EXTRA_CA_CERTS`; the repo
+Dockerfiles stay unchanged. PostgreSQL for tests is still the local cluster (D3).
